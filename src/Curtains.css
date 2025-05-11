@@ -1,0 +1,55 @@
+.curtain {
+    position: fixed;
+    top: 0;
+    width: 50%;
+    height: 100%;
+    background-color: #592644;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    transition: transform 1.2s ease-in-out;
+}
+
+.left {
+    left: 0;
+    justify-content: flex-end; /* Alinea el logo a la derecha */
+}
+
+.right {
+    right: 0;
+    justify-content: flex-start; /* Alinea el logo a la izquierda */
+}
+
+.curtain-logo {
+    max-height: 40px;  /* Limita el tamaño del logo */
+    object-fit: contain; /* Mantiene la proporción del logo */
+    transition: transform 1.2s ease-in-out;
+}
+
+/* Animación para abrir las cortinas */
+.curtain.open {
+    transform: translateX(0);
+}
+
+/* Animación para cerrar las cortinas */
+.curtain.closed {
+    transform: translateX(100%);
+}
+
+/* Animación para la cortina izquierda */
+.left.open {
+    transform: translateX(0);
+}
+
+.left.closed {
+    transform: translateX(-100%);
+}
+
+/* Animación para la cortina derecha */
+.right.open {
+    transform: translateX(0);
+}
+
+.right.closed {
+    transform: translateX(100%);
+}
