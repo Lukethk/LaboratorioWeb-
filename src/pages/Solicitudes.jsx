@@ -188,7 +188,7 @@ const Solicitudes = () => {
     };
 
     const handleQuitarInsumo = (idx) => {
-        setItems(items.filter((_, index) => index !== idx)); // Quita el insumo de la lista por índice
+        setItems(prev => prev.filter((_, i) => i !== idx));
     };
 
 
@@ -478,6 +478,7 @@ const Solicitudes = () => {
                             </div>
 
                             <div className="col-span-full flex justify-end space-x-2 mt-4">
+                                {/* Botón Cancelar */}
                                 <button
                                     type="button"
                                     onClick={() => setModalOpen(false)}
@@ -485,42 +486,45 @@ const Solicitudes = () => {
                                 >
                                     Cancelar
                                 </button>
-                                <PDFDownloadLink
-                                    document={
-                                        <FormularioPDF
-                                            data={{
-                                                unidadSolicitante: header.unidadSolicitante,
-                                                fecha: header.fecha,
-                                                centroCosto: header.centroCosto,
-                                                responsable: header.responsable,
-                                                codigoInversion: header.codigoInversion,
-                                                justificacion: header.justificacion,
-                                                observaciones: header.observaciones,
-                                                items: items.map(it => ({
-                                                    cantidad: it.cantidad,
-                                                    unidad: it.unidad || '',
-                                                    descripcion: it.nombre,
-                                                    pu: it.precio,
-                                                    total: it.valorTotal,
-                                                })),
-                                                valorTotal: header.valorTotal,
-                                                valorLiteral: header.valorLiteral,
-                                            }}
-                                        />
-                                    }
-                                    fileName={`Solicitud_${header.fecha || "sin_fecha"}.pdf`}
-                                >
 
-                                    {({ loading }) => (
-                                        <button
-                                            type="button"
-                                            onClick={handleCreatePDF}
-                                            className="px-4 py-2 bg-[#592644] text-white rounded hover:bg-[#4b1f3d]"
-                                        >
-                                            {loading ? "Cargando..." : "Guardar y Exportar PDF"}
-                                        </button>
-                                    )}
-                                </PDFDownloadLink>
+                                {/* ⬇️ Sustituye tu antiguo <PDFDownloadLink> por este bloque ⬇️ */}
+                                {items.length > 0 && (
+                                    <PDFDownloadLink
+                                        key={items.map(it => it.id).join('-')}      // fuerza que se desmonte/remonte
+                                        document={
+                                            <FormularioPDF
+                                                data={{
+                                                    unidadSolicitante: header.unidadSolicitante,
+                                                    fecha: header.fecha,
+                                                    centroCosto: header.centroCosto,
+                                                    responsable: header.responsable,
+                                                    codigoInversion: header.codigoInversion,
+                                                    justificacion: header.justificacion,
+                                                    observaciones: header.observaciones,
+                                                    items: items.map(it => ({
+                                                        cantidad: it.cantidad,
+                                                        unidad: it.unidad || '',
+                                                        descripcion: it.nombre,
+                                                        pu: it.precio,
+                                                        total: it.valorTotal,
+                                                    })),
+                                                    valorTotal: header.valorTotal,
+                                                    valorLiteral: header.valorLiteral,
+                                                }}
+                                            />
+                                        }
+                                        fileName={`Solicitud_${header.fecha || 'sin_fecha'}.pdf`}
+                                    >
+                                        {({ loading }) => (
+                                            <button
+                                                type="submit"            
+                                                className="px-4 py-2 bg-[#592644] text-white rounded hover:bg-[#4b1f3d]"
+                                            >
+                                                {loading ? 'Generando…' : 'Guardar y Exportar PDF'}
+                                            </button>
+                                        )}
+                                    </PDFDownloadLink>
+                                )}
                             </div>
 
                         </form>
