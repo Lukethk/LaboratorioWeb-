@@ -6,15 +6,20 @@ import GraficoLab from "../components/GraficoLab";
 import SkeletonDashboard from "../components/SkeletonDashboard.jsx";
 const API_URL = "https://universidad-la9h.onrender.com";
 
-const Card = ({ title, value, subtitle, redirectTo }) => {
+const Card = ({ title, value, subtitle, redirectTo, icon }) => {
     const navigate = useNavigate();
 
     return (
         <div
-            onClick={() => navigate(redirectTo)}
-            className="cursor-pointer flex flex-col justify-between p-6 bg-gradient-to-r from-[#592644] to-[#724c6d] rounded-2xl shadow-xl w-full h-40 transition-transform hover:scale-105 transform"
+            onClick={() => redirectTo && navigate(redirectTo)}
+            className={`cursor-pointer flex flex-col justify-between p-6 bg-gradient-to-r from-[#592644] to-[#724c6d] rounded-2xl shadow-xl w-full h-40 transition-transform hover:scale-105 transform ${!redirectTo ? 'cursor-default hover:scale-100' : ''}`}
         >
-            <h4 className="text-sm font-semibold text-white uppercase tracking-wider">{title}</h4>
+            <div className="flex justify-between items-start">
+                <h4 className="text-sm font-semibold text-white uppercase tracking-wider">{title}</h4>
+                {icon && (
+                    <i className={`fa fa-${icon} text-white text-xl`}></i>
+                )}
+            </div>
             <p className="text-3xl font-extrabold text-white">{value}</p>
             <p className="text-xs text-white">{subtitle}</p>
         </div>
@@ -110,12 +115,11 @@ const AlertsTable = ({ alerts, error, reload }) => {
 const Dashboard = () => {
     const [insumos, setInsumos] = useState([]);
     const [alertas, setAlertas] = useState([]);
+    const [solicitudes, setSolicitudes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-
     const [showCurtains, setShowCurtains] = useState(true);
     const [animateOpen, setAnimateOpen] = useState(false);
-
 
     const fetchData = async () => {
         try {
@@ -131,6 +135,11 @@ const Dashboard = () => {
             if (!alertasResponse.ok) throw new Error("Error al obtener alertas");
             const alertasData = await alertasResponse.json();
             setAlertas(alertasData);
+
+            const solicitudesResponse = await fetch(`${API_URL}/solicitudes-uso`);
+            if (!solicitudesResponse.ok) throw new Error("Error al obtener solicitudes");
+            const solicitudesData = await solicitudesResponse.json();
+            setSolicitudes(solicitudesData);
         } catch (error) {
             setError(error.message);
         } finally {
@@ -159,16 +168,15 @@ const Dashboard = () => {
         }
     }, []);
 
-
-
-
     const totalInsumos = insumos.length;
-
     const stockCritico = insumos.filter(insumo => {
         const stockActual = parseInt(insumo.stock_actual);
         const stockMinimo = parseInt(insumo.stock_minimo);
         return stockActual <= stockMinimo;
     }).length;
+
+    // Calcular solicitudes completadas
+    const solicitudesCompletadas = solicitudes.filter(s => s.estado === 'Completada').length;
 
     return (
         <div className="flex flex-col lg:flex-row bg-gray-50 min-h-screen">
@@ -200,13 +208,11 @@ const Dashboard = () => {
                 </>
             )}
 
-
             <main className="flex-1 p-4 sm:p-6 lg:ml-60">
                 <h2 className="text-xl md:text-2xl font-bold text-black mb-6 md:mb-10">Gestión de Laboratorio</h2>
 
                 {loading ? (
                     <SkeletonDashboard />
-
                 ) : error ? (
                     <p className="text-red-500">{error}</p>
                 ) : (
@@ -227,9 +233,10 @@ const Dashboard = () => {
                                         redirectTo="/Reportes"
                                     />
                                     <Card
-                                        title="Proximamente "
-                                        value="---"
-                                        subtitle="Nueva función en camino"
+                                        title="Laboratorios Completados"
+                                        value={solicitudesCompletadas}
+                                        subtitle="Solicitudes confirmadas"
+                                        icon="check-circle"
                                     />
                                 </div>
 
@@ -239,8 +246,6 @@ const Dashboard = () => {
                                     </h3>
                                     <AlertsTable alerts={alertas} error={error} reload={fetchData} />
                                 </div>
-
-
                             </section>
 
                             <aside className="w-full xl:w-[450px] bg-[#59264426] p-4 -mt-7 rounded-xl  min-h-[400px]">
