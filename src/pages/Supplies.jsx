@@ -63,8 +63,8 @@ const Supplies = () => {
         const stockActual = parseInt(insumo.stock_actual);
         const stockMinimo = parseInt(insumo.stock_minimo);
 
-        if (filter === "Stock Bajo" && !(stockActual > 0 && stockActual <= stockMinimo)) return false;
-        if (filter === "Sin stock" && stockActual !== 0) return false;
+        if (filter === "Disponibilidad Baja" && !(stockActual > 0 && stockActual <= stockMinimo)) return false;
+        if (filter === "Sin Disponibilidad" && stockActual !== 0) return false;
         if (tipoFiltro && insumo.tipo !== tipoFiltro) return false;
         if (ubicacionFiltro && insumo.ubicacion !== ubicacionFiltro) return false;
         if (unidadFiltro && insumo.unidad_medida !== unidadFiltro) return false;
@@ -443,24 +443,23 @@ const Supplies = () => {
                             </div>
                             <form onSubmit={handleUpdate} className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
                                 {[
-                                    { name: "nombre", type: "text" },
-                                    { name: "descripcion", type: "text" },
-                                    { name: "ubicacion", type: "text" },
-                                    { name: "tipo", type: "text" },
-                                    { name: "unidad_medida", type: "text" },
-                                    { name: "stock_actual", type: "number" },
-                                    { name: "stock_minimo", type: "number" },
-                                    { name: "stock_maximo", type: "number" },
-                                ].map(({ name, type }) => (
+                                    { name: "nombre", label: "Nombre", type: "text" },
+                                    { name: "descripcion", label: "Descripción", type: "text" },
+                                    { name: "ubicacion", label: "Ubicación", type: "text" },
+                                    { name: "tipo", label: "Tipo", type: "text" },
+                                    { name: "unidad_medida", label: "Unidad de medida", type: "text" },
+                                    { name: "stock_actual", label: "Disponibilidad actual", type: "number" },
+                                    { name: "stock_minimo", label: "Disponibilidad mínima", type: "number" },
+                                    { name: "stock_maximo", label: "Disponibilidad máxima", type: "number" },
+                                ].map(({ name, label, type }) => (
                                     <div key={name} className="flex flex-col">
-                                        <label htmlFor={name} className="mb-1 font-medium capitalize text-gray-700">
-                                            {name.replace("_", " ")}
+                                        <label htmlFor={name} className="mb-1 font-medium text-gray-700">
+                                            {label}
                                         </label>
                                         <input
                                             id={name}
                                             type={type}
                                             name={name}
-                                            placeholder={name.replace("_", " ").toUpperCase()}
                                             value={editInsumo[name] || ""}
                                             onChange={(e) =>
                                                 setEditInsumo({

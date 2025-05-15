@@ -52,7 +52,7 @@ const Reportes = () => {
 
         const header = [
             "ID", "Nombre", "Descripción", "Ubicación", "Tipo",
-            "Unidad Medida", "Stock Actual", "Stock Mínimo"
+            "Unidad Medida", "Disponibilidad Actual", "Disponibilidad Mínima"
         ];
 
         const tableOptions = {
@@ -88,7 +88,6 @@ const Reportes = () => {
 
         let finalY = doc.lastAutoTable.finalY + 10;
 
-
         doc.save("reporte_insumos.pdf");
     };
 
@@ -105,12 +104,7 @@ const Reportes = () => {
                         subtitle="Insumos Críticos"
                         redirectTo="/Reportes"
                     />
-
-
-
                 </div>
-
-
 
                 <h2 className="mt-8 text-2xl font-semibold text-[#592644]">Insumos Críticos</h2>
                 <button
@@ -120,7 +114,6 @@ const Reportes = () => {
                     <i className="fa fa-file-pdf text-xl"></i>
                     <span className="text-sm sm:text-base">Generar Reporte PDF</span>
                 </button>
-
 
                 <div className="bg-white p-4 sm:p-8 mt-6 rounded-lg overflow-y-auto max-h-[70vh]">
                     {loading ? (
@@ -138,59 +131,67 @@ const Reportes = () => {
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                             {insumosCriticos.map((insumo) => {
-                                const stockActual = parseInt(insumo.stock_actual);
-                                const stockMinimo = parseInt(insumo.stock_minimo);
-                                const isSinStock = stockActual === 0;
+                                const disponibilidadActual = parseInt(insumo.stock_actual);
+                                const disponibilidadMinima = parseInt(insumo.stock_minimo);
+                                const isSinDisponibilidad = disponibilidadActual === 0;
 
                                 return (
                                     <div
                                         key={insumo.id_insumo}
-                                        className={`p-4 rounded-lg shadow-md relative ${isSinStock
-                                            ? "bg-red-100 border-l-4 border-red-600"
-                                            : "bg-yellow-50 border-l-4 border-yellow-500"
-                                            }`}
+                                        className={`p-4 rounded-lg shadow-md relative ${
+                                            isSinDisponibilidad
+                                                ? "bg-red-100 border-l-4 border-red-600"
+                                                : "bg-yellow-50 border-l-4 border-yellow-500"
+                                        }`}
                                     >
-                                        <span className={`absolute top-0 right-0 inline-block px-2 py-1 text-xs font-semibold rounded-tr-lg rounded-bl-lg mb-2 ${isSinStock ? "bg-red-200 text-red-800" : "bg-yellow-100 text-yellow-800"
-                                            }`}>
-                                            {isSinStock ? "SIN STOCK" : "STOCK BAJO"}
-                                        </span>
-                                        <h3 className={`text-lg font-bold mb-1 ${isSinStock ? "text-red-800" : "text-yellow-800"
-                                            }`}>
+                <span className={`absolute top-0 right-0 inline-block px-2 py-1 text-xs font-semibold rounded-tr-lg rounded-bl-lg mb-2 ${
+                    isSinDisponibilidad ? "bg-red-200 text-red-800" : "bg-yellow-100 text-yellow-800"
+                }`}>
+                    {isSinDisponibilidad ? "SIN DISPONIBILIDAD" : "DISPONIBILIDAD BAJA"}
+                </span>
+                                        <h3 className={`text-lg font-bold mb-1 ${
+                                            isSinDisponibilidad ? "text-red-800" : "text-yellow-800"
+                                        }`}>
                                             {insumo.nombre}
                                         </h3>
-                                        <p className={`text-sm mb-4 ${isSinStock ? "text-red-700" : "text-yellow-700"}`}>
+                                        <p className={`text-sm mb-4 ${isSinDisponibilidad ? "text-red-700" : "text-yellow-700"}`}>
                                             {insumo.descripcion || "Sin descripción"}
                                         </p>
 
                                         <div className="flex justify-between mb-4">
                                             <div className="text-center">
-                                                <span className={`block text-2xl font-bold ${isSinStock ? "text-red-800" : "text-yellow-800"
-                                                    }`}>
-                                                    {insumo.stock_actual}
-                                                </span>
-                                                <span className={`text-xs ${isSinStock ? "text-red-600" : "text-yellow-600"
-                                                    }`}>
-                                                    Stock
-                                                </span>
+                        <span className={`block text-2xl font-bold ${
+                            isSinDisponibilidad ? "text-red-800" : "text-yellow-800"
+                        }`}>
+                            {insumo.stock_actual}
+                        </span>
+                                                <span className={`text-xs ${
+                                                    isSinDisponibilidad ? "text-red-600" : "text-yellow-600"
+                                                }`}>
+                            Disponibilidad Actual
+                        </span>
                                             </div>
                                             <div className="text-center">
-                                                <span className={`block text-2xl font-bold ${isSinStock ? "text-red-800" : "text-yellow-800"
-                                                    }`}>
-                                                    {insumo.stock_minimo}
-                                                </span>
-                                                <span className={`text-xs ${isSinStock ? "text-red-600" : "text-yellow-600"
-                                                    }`}>
-                                                    Stock Mínimo
-                                                </span>
+                        <span className={`block text-2xl font-bold ${
+                            isSinDisponibilidad ? "text-red-800" : "text-yellow-800"
+                        }`}>
+                            {insumo.stock_minimo}
+                        </span>
+                                                <span className={`text-xs ${
+                                                    isSinDisponibilidad ? "text-red-600" : "text-yellow-600"
+                                                }`}>
+                            Disponibilidad Mínima
+                        </span>
                                             </div>
                                         </div>
 
                                         <button
                                             onClick={() => setModalInsumo(insumo)}
-                                            className={`w-auto py-1 px-4 font-medium rounded transition-colors duration-200 ${isSinStock
-                                                ? "bg-red-600 hover:bg-red-700 text-white"
-                                                : "bg-yellow-600 hover:bg-yellow-700 text-white"
-                                                }`}
+                                            className={`w-auto py-1 px-4 font-medium rounded transition-colors duration-200 ${
+                                                isSinDisponibilidad
+                                                    ? "bg-red-600 hover:bg-red-700 text-white"
+                                                    : "bg-yellow-600 hover:bg-yellow-700 text-white"
+                                            }`}
                                         >
                                             Ver Detalles
                                         </button>
@@ -204,21 +205,16 @@ const Reportes = () => {
                 {modalInsumo && (
                     <div className="fixed inset-0 flex justify-center items-center z-50 bg-opacity-40">
                         <div className="bg-white rounded-[2rem] w-[95vw] max-w-2xl p-10 relative shadow-2xl">
-
-                            {/* Ubicación badge */}
                             <div className="absolute top-10 right-8 bg-gray-100 px-5 py-1.5 rounded-full font-semibold text-xl shadow-lg text-[#592644]">
                                 {modalInsumo.ubicacion}
                             </div>
 
-                            {/* Título */}
                             <h2 className="text-4xl font-bold text-black mb-4 text-[#592644]">{modalInsumo.nombre}</h2>
 
-                            {/* Descripción */}
                             <p className="text-lg font-medium text-gray-700 mb-10">
                                 {modalInsumo.descripcion}
                             </p>
 
-                            {/* Tipo y Unidad Medida */}
                             <div className="flex flex-col sm:flex-row gap-6 justify-center mb-12">
                                 <div className="bg-gray-200 rounded-2xl px-6 py-6 text-center flex-1 shadow-lg">
                                     <p className="font-bold text-lg mb-1 text-[#592644]">TIPO</p>
@@ -230,7 +226,6 @@ const Reportes = () => {
                                 </div>
                             </div>
 
-                            {/* Stocks */}
                             <div className="grid grid-cols-3 text-center gap-6 mb-12">
                                 <div>
                                     <p className="font-bold text-sm mb-1">DISPONIBILIDAD ACTUAL</p>
@@ -241,12 +236,11 @@ const Reportes = () => {
                                     <p className="text-4xl font-bold text-[#592644] mt-5">{modalInsumo.stock_minimo}</p>
                                 </div>
                                 <div>
-                                    <p className="font-bold text-sm mb-1">DISPONIBILIDAD MAXIMO</p>
+                                    <p className="font-bold text-sm mb-1">DISPONIBILIDAD MAXIMA</p>
                                     <p className="text-4xl font-bold text-[#592644] mt-5">{modalInsumo.stock_maximo}</p>
                                 </div>
                             </div>
 
-                            {/* Botón */}
                             <div className="flex justify-center">
                                 <button
                                     onClick={() => setModalInsumo(null)}

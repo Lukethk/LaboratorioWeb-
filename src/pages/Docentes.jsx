@@ -183,12 +183,7 @@ const SolicitudesUso = () => {
 
                 <div className="flex flex-wrap gap-4 mb-6">
                     <SearchBar onChange={setQuery} placeholder="Buscar solicitudes..." />
-                    <select value={labFilter} onChange={e => setLabFilter(e.target.value)} className="p-2 rounded border w-full sm:w-auto">
-                        <option value="">Todos los laboratorios</option>
-                        {[...new Set(solicitudes.map(s => s.laboratorio_nombre))].map(lab => (
-                            <option key={lab} value={lab}>{lab}</option>
-                        ))}
-                    </select>
+
                     <select value={estadoFilter} onChange={e => setEstadoFilter(e.target.value)} className="p-2 rounded border">
                         <option value="">Todos los estados</option>
                         {Object.keys(prioridades).map(est => (
