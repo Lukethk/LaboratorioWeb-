@@ -169,7 +169,7 @@ const SolicitudesUso = () => {
         })).filter(item => item.cantidad_no_devuelta > 0);
     };
 
-    const CONFIRMAR_DEVOLUCION_INSUMOS = async () => {
+    const confirmarDevolucionInsumos = async () => {
         try {
             setLoadingDetails(true);
             const insumosNoDevueltos = calcularNoDevueltos();
@@ -416,6 +416,13 @@ Insumos no devueltos: ${data.insumos_no_devueltos.length}`);
                                         </button>
                                         {isCompleting && expandedSolicitud.insumos?.[0] && (
                                             <>
+                                                <button
+                                                    className="bg-[#592644] text-white py-2 px-6 rounded-lg shadow-md"
+                                                    onClick={confirmarDevolucionInsumos}
+                                                    disabled={loadingDetails}
+                                                >
+                                                    {loadingDetails ? 'Procesando...' : 'Confirmar Devolución'}
+                                                </button>
                                                 <div className="flex justify-center">
                                                     <input
                                                         type="number"
