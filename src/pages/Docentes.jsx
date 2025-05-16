@@ -327,7 +327,7 @@ Insumos no devueltos: ${data.insumos_no_devueltos.length}`);
                 </div>
 
                 {expandedSolicitud && (
-                    <div className="fixed inset-0  bg-opacity-40 flex items-center justify-center z-50">
+                    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
                         <div className="bg-white p-6 md:p-10 rounded-3xl w-[95%] max-w-4xl max-h-[90%] overflow-auto border-2 border-[#592644]">
                             {loadingDetails ? (
                                 <div className="flex justify-center items-center h-64">
@@ -335,16 +335,16 @@ Insumos no devueltos: ${data.insumos_no_devueltos.length}`);
                                 </div>
                             ) : (
                                 <>
-                                    <div className="flex flex-wrap gap-15 justify-center mb-8">
-                                        <div className="bg-white px-15 py-3 rounded-lg flex items-center gap-2 min-w-[140px] justify-between shadow-md">
+                                    <div className="flex flex-wrap gap-4 justify-center mb-8">
+                                        <div className="bg-white px-4 py-3 rounded-lg flex items-center gap-2 min-w-[140px] justify-between shadow-md">
                                             <span className="text-gray-700">Estudiantes</span>
                                             <span className="font-bold text-[#592644]">{expandedSolicitud.numero_estudiantes}</span>
                                         </div>
-                                        <div className="bg-white px-20 py-3 rounded-lg flex items-center gap-2 min-w-[140px] justify-between shadow-md">
+                                        <div className="bg-white px-4 py-3 rounded-lg flex items-center gap-2 min-w-[140px] justify-between shadow-md">
                                             <span className="text-gray-700">Grupos</span>
                                             <span className="font-bold text-[#592644]">{expandedSolicitud.numero_grupos}</span>
                                         </div>
-                                        <div className="bg-white px-15 py-3 rounded-lg flex items-center gap-2 min-w-[140px] justify-between shadow-md">
+                                        <div className="bg-white px-4 py-3 rounded-lg flex items-center gap-2 min-w-[140px] justify-between shadow-md">
                                             <span className="text-gray-700">Integrantes</span>
                                             <span className="font-bold text-[#592644]">{expandedSolicitud.tamano_grupo}</span>
                                         </div>
@@ -386,8 +386,8 @@ Insumos no devueltos: ${data.insumos_no_devueltos.length}`);
                                                                     />
                                                                 </div>
                                                                 <span className="font-semibold text-center text-red-500">
-                                                                    {insumo.cantidad_total - (devolucionParcial[insumo.id_insumo] ?? insumo.cantidad_total)}
-                                                                </span>
+                                                    {insumo.cantidad_total - (devolucionParcial[insumo.id_insumo] ?? insumo.cantidad_total)}
+                                                </span>
                                                             </>
                                                         )}
                                                     </div>
@@ -414,30 +414,14 @@ Insumos no devueltos: ${data.insumos_no_devueltos.length}`);
                                         >
                                             Cerrar
                                         </button>
-                                        {isCompleting && expandedSolicitud.insumos?.[0] && (
-                                            <>
-                                                <button
-                                                    className="bg-[#592644] text-white py-2 px-6 rounded-lg shadow-md"
-                                                    onClick={confirmarDevolucionInsumos}
-                                                    disabled={loadingDetails}
-                                                >
-                                                    {loadingDetails ? 'Procesando...' : 'Confirmar Devolución'}
-                                                </button>
-                                                <div className="flex justify-center">
-                                                    <input
-                                                        type="number"
-                                                        min="0"
-                                                        max={expandedSolicitud.insumos[0].cantidad_total}
-                                                        value={devolucionParcial[expandedSolicitud.insumos[0].id_insumo] ?? expandedSolicitud.insumos[0].cantidad_total}
-                                                        onChange={(e) => handleCantidadDevuelta(expandedSolicitud.insumos[0].id_insumo, e.target.value)}
-                                                        className="w-20 px-2 py-1 border rounded text-center bg-white"
-                                                        onKeyPress={(e) => !/[0-9]/.test(e.key) && e.preventDefault()}
-                                                    />
-                                                </div>
-                                                <span className="font-semibold text-center text-red-500">
-            {Math.max(0, expandedSolicitud.insumos[0].cantidad_total - (devolucionParcial[expandedSolicitud.insumos[0].id_insumo] ?? expandedSolicitud.insumos[0].cantidad_total))}
-        </span>
-                                            </>
+                                        {isCompleting && (
+                                            <button
+                                                className="bg-[#592644] text-white py-2 px-6 rounded-lg shadow-md"
+                                                onClick={confirmarDevolucionInsumos}
+                                                disabled={loadingDetails}
+                                            >
+                                                {loadingDetails ? 'Procesando...' : 'Confirmar Devolución'}
+                                            </button>
                                         )}
                                     </div>
                                 </>
