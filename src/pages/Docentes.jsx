@@ -169,12 +169,12 @@ const SolicitudesUso = () => {
         })).filter(item => item.cantidad_no_devuelta > 0);
     };
 
-    const confirmarDevolucionInsumos = async () => {
+    const CONFIRMAR_DEVOLUCION_INSUMOS = async () => {
         try {
             setLoadingDetails(true);
             const insumosNoDevueltos = calcularNoDevueltos();
 
-            const response = await fetch(`${API_URL}/solicitudes-uso/${expandedSolicitud.id_solicitud}/completar`, {
+            const response = await fetch(`${API_URL}/solicitudes-uso/${expandedSolicitud.id_solicitud}/devolver`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -182,18 +182,27 @@ const SolicitudesUso = () => {
                 }),
             });
 
-            if (!response.ok) throw new Error('Error al completar');
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'Error al procesar la devolución');
+            }
 
             setSolicitudes(prev => prev.map(s =>
-                s.id_solicitud === expandedSolicitud.id_solicitud
-                    ? { ...s, estado: 'Completada' }
-                    : s
+                s.id_solicitud === expandedSolicitud.id_solicitud ? {
+                    ...s,
+                    estado: 'Completada',
+                    insumos_no_devueltos: data.insumos_no_devueltos
+                } : s
             ));
+
+            alert(`Devolución registrada exitosamente! 
+Insumos no devueltos: ${data.insumos_no_devueltos.length}`);
 
             closeModal();
         } catch (error) {
             console.error('Error al confirmar devolución:', error);
-            alert('Ocurrió un error al registrar la devolución');
+            alert(`Error: ${error.message}`);
         } finally {
             setLoadingDetails(false);
             setIsCompleting(false);
@@ -405,14 +414,23 @@ const SolicitudesUso = () => {
                                         >
                                             Cerrar
                                         </button>
-                                        {isCompleting && (
-                                            <button
-                                                className="bg-[#592644] text-white py-2 px-6 rounded-lg shadow-md"
-                                                onClick={confirmarDevolucionInsumos}
-                                                disabled={loadingDetails}
-                                            >
-                                                {loadingDetails ? 'Procesando...' : 'Confirmar Devolución'}
-                                            </button>
+                                        {isCompleting && expandedSolicitud.insumos?.[0] && (
+                                            <>
+                                                <div className="flex justify-center">
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        max={expandedSolicitud.insumos[0].cantidad_total}
+                                                        value={devolucionParcial[expandedSolicitud.insumos[0].id_insumo] ?? expandedSolicitud.insumos[0].cantidad_total}
+                                                        onChange={(e) => handleCantidadDevuelta(expandedSolicitud.insumos[0].id_insumo, e.target.value)}
+                                                        className="w-20 px-2 py-1 border rounded text-center bg-white"
+                                                        onKeyPress={(e) => !/[0-9]/.test(e.key) && e.preventDefault()}
+                                                    />
+                                                </div>
+                                                <span className="font-semibold text-center text-red-500">
+            {Math.max(0, expandedSolicitud.insumos[0].cantidad_total - (devolucionParcial[expandedSolicitud.insumos[0].id_insumo] ?? expandedSolicitud.insumos[0].cantidad_total))}
+        </span>
+                                            </>
                                         )}
                                     </div>
                                 </>
