@@ -16,6 +16,7 @@ const Login = () => {
         }
     }, [navigate]);
 
+
     const handleLogin = async () => {
         try {
             const response = await fetch("https://universidad-la9h.onrender.com/auth/encargado-login", {
@@ -143,7 +144,7 @@ const Login = () => {
                     )}
 
                     <button
-                        className="w-full mt-5 p-2 bg-[#592644] text-white font-bold rounded-2xl hover:bg-[#4b1f3d] transition"
+                        className="w-full mt-5 p-2 bg-[#592644] text-white font-bold rounded-2xl transform transition-transform duration-200 hover:scale-105"
                         onClick={handleLogin}
                     >
                         Iniciar sesión

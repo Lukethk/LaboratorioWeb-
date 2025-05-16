@@ -42,7 +42,7 @@ const AlertsTable = ({ alerts, error, reload }) => {
     }
 
     return (
-        <div className="flex flex-col gap-4 mt-4">
+        <div className="flex flex-col gap-5 mt-4">
             {alerts.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {alerts
@@ -240,7 +240,7 @@ const Dashboard = () => {
                                     />
                                 </div>
 
-                                <div className="overflow-y-auto max-h-160 mt-3">
+                                <div className="overflow-y-auto max-h-220 mt-3">
                                     <h3 className="text-xl font-bold mt-4 text-[#592644] mb-4">
                                         Alertas y notificaciones
                                     </h3>

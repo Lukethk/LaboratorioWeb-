@@ -8,7 +8,6 @@ import Docentes from "./pages/Docentes.jsx";
 import Alumnos from "./pages/Alumnos.jsx";
 import Register from "./pages/Register.jsx";
 import DetalleSolicitud from './components/DetalleSolicitud';
-import PrivateRoute from "./components/PrivateRoute";
 
 function App() {
     return (
@@ -17,14 +16,13 @@ function App() {
                 <Route path="/" element={<Login />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
-                {/* Rutas protegidas */}
-                <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-                <Route path="/supplies" element={<PrivateRoute><Supplies /></PrivateRoute>} />
-                <Route path="/reportes" element={<PrivateRoute><Reportes /></PrivateRoute>} />
-                <Route path="/solicitudes" element={<PrivateRoute><Solicitudes /></PrivateRoute>} />
-                <Route path="/docentes" element={<PrivateRoute><Docentes /></PrivateRoute>} />
-                <Route path="/alumnos" element={<PrivateRoute><Alumnos /></PrivateRoute>} />
-                <Route path="/DetalleSolicitud" element={<PrivateRoute><DetalleSolicitud /></PrivateRoute>} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/supplies" element={<Supplies />} />
+                <Route path="/reportes" element={<Reportes />} />
+                <Route path="/solicitudes" element={<Solicitudes />} />
+                <Route path="/docentes" element={<Docentes />} />
+                <Route path="/alumnos" element={<Alumnos />} />
+                <Route path="/DetalleSolicitud" element={<DetalleSolicitud />} />
             </Routes>
         </Router>
     );

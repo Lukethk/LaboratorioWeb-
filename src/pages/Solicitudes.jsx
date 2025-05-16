@@ -281,18 +281,23 @@ const Solicitudes = () => {
                                         Ver Detalles
                                     </button>
 
-                                    <div className="flex items-center gap-1">
-                                        <label className="text-sm font-medium text-gray-700 m-0">Completado?</label>
-                                        <input
-                                            type="checkbox"
-                                            checked={s.estado === "Completada"}
-                                            onChange={(e) => {
-                                                const nuevoEstado = e.target.checked ? "Completada" : "Pendiente";
-                                                setEstadoPendiente({ solicitud: s, nuevoEstado });
-                                                setConfirmModalOpen(true);
-                                            }}
-                                            className="form-checkbox text-[#592644] rounded"
-                                        />
+                                    <div className="flex items-center gap-2">
+                                        <label className="relative inline-flex items-center cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={s.estado === "Completada"}
+                                                onChange={(e) => {
+                                                    const nuevoEstado = e.target.checked ? "Completada" : "Pendiente";
+                                                    setEstadoPendiente({ solicitud: s, nuevoEstado });
+                                                    setConfirmModalOpen(true);
+                                                }}
+                                                className="sr-only peer"
+                                            />
+                                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#592644]"></div>
+                                            <span className="ml-2 text-sm font-medium text-gray-700">
+        {s.estado === "Completada" ? "Completada" : "Marcar"}
+      </span>
+                                        </label>
                                     </div>
                                 </div>
                             </div>

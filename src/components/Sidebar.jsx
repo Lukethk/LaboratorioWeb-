@@ -25,16 +25,9 @@ const Sidebar = () => {
 
 
     const handleLogout = () => {
-
-        localStorage.removeItem("token");
-
-
-
-
-        setTimeout(() => {
-            navigate("/login");
-        }, 700);
+        navigate("/login");
     };
+
 
 
 
@@ -82,11 +75,12 @@ const Sidebar = () => {
                     <div
                         onClick={handleLogout}
                         className="flex items-center space-x-3 p-3 mt-auto rounded-xl cursor-pointer text-white hover:bg-white/20 transition transform hover:scale-105"
-                    >
-                        <i className="fas fa-sign-out-alt text-lg"></i>
-                        <span className="font-medium">Cerrar Sesión</span>
-                    </div>
-                </nav>
+                        >
+                    <i className="fas fa-sign-out-alt text-lg"></i>
+                    <span className="font-medium">Cerrar Sesión</span>
+        </div>
+
+</nav>
             </aside>
 
             {mensaje && (

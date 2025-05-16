@@ -40,7 +40,8 @@ const SolicitudesUso = () => {
     const [expandedSolicitud, setExpandedSolicitud] = useState(null);
     const [loading, setLoading] = useState(true);
     const [loadingDetails, setLoadingDetails] = useState(false);
-
+    const [devolucionParcial, setDevolucionParcial] = useState({});
+    const [isCompleting, setIsCompleting] = useState(false);
 
     const fetchData = async () => {
         try {
@@ -75,14 +76,13 @@ const SolicitudesUso = () => {
 
     const handleAprobar = async (id) => {
         try {
-            const response = await fetch(`https://universidad-la9h.onrender.com/solicitudes-uso/${id}/estado`, {
+            const response = await fetch(`${API_URL}/solicitudes-uso/${id}/estado`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ estado: 'Aprobada' }),
             });
 
             if (!response.ok) {
-                // Aquí registramos el cuerpo de la respuesta para ver más detalles
                 const errorData = await response.json();
                 throw new Error(`Error al aprobar: ${JSON.stringify(errorData)}`);
             }
@@ -96,7 +96,6 @@ const SolicitudesUso = () => {
             console.error('Error en handleAprobar:', error);
         }
     };
-
 
     const handleRechazar = async (id) => {
         try {
@@ -120,28 +119,27 @@ const SolicitudesUso = () => {
 
     const handleCompletar = async (id) => {
         try {
-            const response = await fetch(`${API_URL}/solicitudes-uso/${id}/estado`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ estado: 'Completada' }),
+            setIsCompleting(true);
+            const response = await fetch(`${API_URL}/solicitudes-uso/${id}`);
+            const data = await response.json();
+
+            // Inicializar devolución parcial con todas las cantidades como devueltas
+            const inicialDevolucion = {};
+            data.insumos.forEach(insumo => {
+                inicialDevolucion[insumo.id_insumo] = insumo.cantidad_total;
             });
 
-            if (!response.ok) throw new Error('Error al completar');
-
-            setSolicitudes((prevSolicitudes) =>
-                prevSolicitudes.map((s) =>
-                    s.id_solicitud === id ? { ...s, estado: 'Completada' } : s
-                )
-            );
+            setDevolucionParcial(inicialDevolucion);
+            setExpandedSolicitud(data);
         } catch (error) {
-            console.error('Error en handleCompletada:', error);
+            console.error('Error obteniendo detalles:', error);
         }
     };
-
 
     const handleVerDetalles = async (solicitud) => {
         try {
             setLoadingDetails(true);
+            setIsCompleting(false);
             const res = await fetch(`${API_URL}/solicitudes-uso/${solicitud.id_solicitud}`);
             const data = await res.json();
             setExpandedSolicitud(data);
@@ -152,9 +150,60 @@ const SolicitudesUso = () => {
         }
     };
 
+    const handleCantidadDevuelta = (insumoId, cantidad) => {
+        // Asegurarse que la cantidad esté entre 0 y el máximo disponible
+        const insumo = expandedSolicitud.insumos.find(i => i.id_insumo === insumoId);
+        const maxCantidad = insumo ? insumo.cantidad_total : 0;
+        const nuevaCantidad = Math.max(0, Math.min(parseInt(cantidad) || 0, maxCantidad));
+
+        setDevolucionParcial(prev => ({
+            ...prev,
+            [insumoId]: nuevaCantidad
+        }));
+    };
+
+    const calcularNoDevueltos = () => {
+        return expandedSolicitud.insumos.map(insumo => ({
+            id_insumo: insumo.id_insumo,
+            cantidad_no_devuelta: insumo.cantidad_total - (devolucionParcial[insumo.id_insumo] || 0)
+        })).filter(item => item.cantidad_no_devuelta > 0);
+    };
+
+    const confirmarDevolucionInsumos = async () => {
+        try {
+            setLoadingDetails(true);
+            const insumosNoDevueltos = calcularNoDevueltos();
+
+            const response = await fetch(`${API_URL}/solicitudes-uso/${expandedSolicitud.id_solicitud}/completar`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    insumos_no_devueltos: insumosNoDevueltos
+                }),
+            });
+
+            if (!response.ok) throw new Error('Error al completar');
+
+            setSolicitudes(prev => prev.map(s =>
+                s.id_solicitud === expandedSolicitud.id_solicitud
+                    ? { ...s, estado: 'Completada' }
+                    : s
+            ));
+
+            closeModal();
+        } catch (error) {
+            console.error('Error al confirmar devolución:', error);
+            alert('Ocurrió un error al registrar la devolución');
+        } finally {
+            setLoadingDetails(false);
+            setIsCompleting(false);
+        }
+    };
 
     const closeModal = () => {
         setExpandedSolicitud(null);
+        setDevolucionParcial({});
+        setIsCompleting(false);
     };
 
     const años = [...new Set(solicitudes.map(s => new Date(s.fecha_hora_inicio).getFullYear()))];
@@ -208,13 +257,13 @@ const SolicitudesUso = () => {
                     </select>
                     <button
                         onClick={fetchData}
-                        className="flex items-center gap-1 text-[#592644] hover:text-[#3e1a2e] border border-[#592644] px-3 py-1 rounded-md transition   5 "
+                        className="flex items-center gap-1 text-[#592644] hover:text-[#3e1a2e] border border-[#592644] px-3 py-1 rounded-md transition duration-200"
                         title="Actualizar solicitudes"
                     >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2"
-                            viewBox="0 0 24 24">
+                             viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round"
-                                d="M4 4v5h.582m15.356-2A9.003 9.003 0 0012 3c-4.418 0-8.166 3.134-8.918 7.21M4.582 9H9m11 11v-5h-.581m0 0H15m0 0a9.003 9.003 0 01-7.418 4.21c-4.418 0-8.166-3.134-8.918-7.21" />
+                                  d="M4 4v5h.582m15.356-2A9.003 9.003 0 0012 3c-4.418 0-8.166 3.134-8.918 7.21M4.582 9H9m11 11v-5h-.581m0 0H15m0 0a9.003 9.003 0 01-7.418 4.21c-4.418 0-8.166-3.134-8.918-7.21" />
                         </svg>
                         <span className="text-sm">Actualizar</span>
                     </button>
@@ -264,78 +313,110 @@ const SolicitudesUso = () => {
                                         )}
                                     </div>
                                 </div>
-
                             );
                         })}
                 </div>
 
                 {expandedSolicitud && (
-                    <div className="fixed inset-0 bg-opacity-40 flex items-center justify-center z-50 ">
+                    <div className="fixed inset-0  bg-opacity-40 flex items-center justify-center z-50">
                         <div className="bg-white p-6 md:p-10 rounded-3xl w-[95%] max-w-4xl max-h-[90%] overflow-auto border-2 border-[#592644]">
-
-                            {/* Tarjetas superiores */}
-                            <div className="flex flex-wrap gap-15 justify-center mb-8">
-                                <div className="bg-white px-15 py-3 rounded-lg flex items-center gap-2 min-w-[140px] justify-between shadow-md">
-                                    <span className="text-gray-700">Estudiantes</span>
-                                    <span className="font-bold text-[#592644]">{expandedSolicitud.numero_estudiantes}</span>
+                            {loadingDetails ? (
+                                <div className="flex justify-center items-center h-64">
+                                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#592644]"></div>
                                 </div>
-                                <div className="bg-white px-20 py-3 rounded-lg flex items-center gap-2 min-w-[140px] justify-between shadow-md">
-                                    <span className="text-gray-700">Grupos</span>
-                                    <span className="font-bold text-[#592644]">{expandedSolicitud.numero_grupos}</span>
-                                </div>
-                                <div className="bg-white px-15 py-3 rounded-lg flex items-center gap-2 min-w-[140px] justify-between shadow-md">
-                                    <span className="text-gray-700">Integrantes</span>
-                                    <span className="font-bold text-[#592644]">{expandedSolicitud.tamano_grupo}</span>
-                                </div>
-                            </div>
-
-                            {/* Tabla de insumos */}
-                            <div>
-                                <h3 className="text-2xl font-bold mb-4 text-start text-[#592644]">Insumos Requeridos</h3>
-                                {expandedSolicitud.insumos?.length > 0 ? (
-                                    <div className="w-full space-y-3">
-                                        {/* Cabecera */}
-                                        <div className="grid grid-cols-4 text-center font-semibold text-gray-700">
-                                            <span className="col-span-1"></span>
-                                            <span className="text-[#592644]">Por Grupo</span>
-                                            <span className="text-[#592644]">Total</span>
-                                            <span className="text-[#592644]">Unidad</span>
+                            ) : (
+                                <>
+                                    <div className="flex flex-wrap gap-15 justify-center mb-8">
+                                        <div className="bg-white px-15 py-3 rounded-lg flex items-center gap-2 min-w-[140px] justify-between shadow-md">
+                                            <span className="text-gray-700">Estudiantes</span>
+                                            <span className="font-bold text-[#592644]">{expandedSolicitud.numero_estudiantes}</span>
                                         </div>
+                                        <div className="bg-white px-20 py-3 rounded-lg flex items-center gap-2 min-w-[140px] justify-between shadow-md">
+                                            <span className="text-gray-700">Grupos</span>
+                                            <span className="font-bold text-[#592644]">{expandedSolicitud.numero_grupos}</span>
+                                        </div>
+                                        <div className="bg-white px-15 py-3 rounded-lg flex items-center gap-2 min-w-[140px] justify-between shadow-md">
+                                            <span className="text-gray-700">Integrantes</span>
+                                            <span className="font-bold text-[#592644]">{expandedSolicitud.tamano_grupo}</span>
+                                        </div>
+                                    </div>
 
-                                        {/* Filas de insumos */}
-                                        {expandedSolicitud.insumos.map((insumo, idx) => (
-                                            <div key={idx} className="grid grid-cols-4 text-center bg-gray-100 px-4 py-3 rounded-lg shadow">
-                                                <span className="font-medium text-start ml-10">{insumo.insumo_nombre}</span>
-                                                <span className="font-semibold">{insumo.cantidad_por_grupo}</span>
-                                                <span className="font-semibold">{insumo.cantidad_total}</span>
-                                                <span className="font-semibold text-center">{insumo.unidad_medida}</span>
+                                    <div>
+                                        <h3 className="text-2xl font-bold mb-4 text-start text-[#592644]">
+                                            {isCompleting ? "Control de Devolución de Insumos" : "Insumos Requeridos"}
+                                        </h3>
+                                        {expandedSolicitud.insumos?.length > 0 ? (
+                                            <div className="w-full space-y-3">
+                                                <div className={`grid ${isCompleting ? 'grid-cols-6' : 'grid-cols-4'} text-center font-semibold text-gray-700`}>
+                                                    <span className="col-span-1 text-start pl-4">Insumo</span>
+                                                    <span className="text-[#592644]">Total</span>
+                                                    <span className="text-[#592644]">Unidad</span>
+                                                    {isCompleting && (
+                                                        <>
+                                                            <span className="text-[#592644]">Devueltos</span>
+                                                            <span className="text-[#592644]">No Devueltos</span>
+                                                        </>
+                                                    )}
+                                                </div>
+
+                                                {expandedSolicitud.insumos.map((insumo, idx) => (
+                                                    <div key={idx} className={`grid ${isCompleting ? 'grid-cols-6' : 'grid-cols-4'} items-center bg-gray-100 px-4 py-3 rounded-lg shadow`}>
+                                                        <span className="font-medium text-start pl-4">{insumo.insumo_nombre}</span>
+                                                        <span className="font-semibold text-center">{insumo.cantidad_total}</span>
+                                                        <span className="font-semibold text-center">{insumo.unidad_medida}</span>
+                                                        {isCompleting && (
+                                                            <>
+                                                                <div className="flex justify-center">
+                                                                    <input
+                                                                        type="number"
+                                                                        min="0"
+                                                                        max={insumo.cantidad_total}
+                                                                        value={devolucionParcial[insumo.id_insumo] ?? insumo.cantidad_total}
+                                                                        onChange={(e) => handleCantidadDevuelta(insumo.id_insumo, e.target.value)}
+                                                                        className="w-20 px-2 py-1 border rounded text-center"
+                                                                    />
+                                                                </div>
+                                                                <span className="font-semibold text-center text-red-500">
+                                                                    {insumo.cantidad_total - (devolucionParcial[insumo.id_insumo] ?? insumo.cantidad_total)}
+                                                                </span>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                ))}
                                             </div>
-                                        ))}
+                                        ) : (
+                                            <p className="text-gray-600 text-center mt-2">No hay insumos registrados.</p>
+                                        )}
                                     </div>
-                                ) : (
-                                    <p className="text-gray-600 text-center mt-2">No hay insumos registrados.</p>
-                                )}
-                            </div>
 
-                            {/* Observaciones */}
-                            {expandedSolicitud.observaciones && (
-                                <div className="mt-8">
-                                    <h4 className="font-bold mb-2 text-[#592644]">Observacion:</h4>
-                                    <div className="bg-gray-100 p-4 rounded-2xl text-gray-700 shadow">
-                                        {expandedSolicitud.observaciones}
+                                    {expandedSolicitud.observaciones && (
+                                        <div className="mt-8">
+                                            <h4 className="font-bold mb-2 text-[#592644]">Observación:</h4>
+                                            <div className="bg-gray-100 p-4 rounded-2xl text-gray-700 shadow">
+                                                {expandedSolicitud.observaciones}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="mt-8 flex justify-center gap-4">
+                                        <button
+                                            className="bg-gray-500 text-white py-2 px-6 rounded-lg shadow-md"
+                                            onClick={closeModal}
+                                        >
+                                            Cerrar
+                                        </button>
+                                        {isCompleting && (
+                                            <button
+                                                className="bg-[#592644] text-white py-2 px-6 rounded-lg shadow-md"
+                                                onClick={confirmarDevolucionInsumos}
+                                                disabled={loadingDetails}
+                                            >
+                                                {loadingDetails ? 'Procesando...' : 'Confirmar Devolución'}
+                                            </button>
+                                        )}
                                     </div>
-                                </div>
+                                </>
                             )}
-
-                            {/* Botón cerrar */}
-                            <div className="mt-8 text-center">
-                                <button
-                                    className="bg-[#592644] text-white py-2 px-6 rounded-lg shadow-md"
-                                    onClick={closeModal}
-                                >
-                                    Cerrar
-                                </button>
-                            </div>
                         </div>
                     </div>
                 )}
