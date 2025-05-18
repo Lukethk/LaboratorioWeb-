@@ -12,12 +12,12 @@ const Login = () => {
     useEffect(() => {
         const isAuthenticated = sessionStorage.getItem("auth") === "true";
         if (isAuthenticated) {
-            navigate("/dashboard");
+            navigate("/Docentes");
         }
     }, [navigate]);
 
-
-    const handleLogin = async () => {
+    const handleLogin = async (e) => {
+        e.preventDefault(); // Prevenir el comportamiento por defecto del formulario
         try {
             const response = await fetch("https://universidad-la9h.onrender.com/auth/encargado-login", {
                 method: "POST",
@@ -36,15 +36,6 @@ const Login = () => {
 
             setShowCurtains(true);
             sessionStorage.setItem("auth", "true");
-            if (!response.ok) {
-                setErrorMessage(data.message);
-                return;
-            }
-
-            setShowCurtains(true);
-            sessionStorage.setItem("auth", "true");
-
-
 
             setTimeout(() => {
                 setCurtainsClosed(true);
@@ -58,9 +49,8 @@ const Login = () => {
 
     useEffect(() => {
         if (curtainsClosed) {
-            // Espera 2 segundos (duración de las cortinas) antes de redirigir al dashboard
             const timeout = setTimeout(() => {
-                navigate("/dashboard");
+                navigate("/Docentes");
             }, 2000);
 
             return () => clearTimeout(timeout);
@@ -71,7 +61,6 @@ const Login = () => {
         <div className="relative overflow-hidden">
             {showCurtains && (
                 <>
-
                     <div
                         className={`fixed inset-y-0 left-0 w-1/2 bg-[#592644] z-50 flex items-center justify-end transition-transform duration-[1200ms] ease-in-out ${
                             curtainsClosed ? "translate-x-0" : "-translate-x-full"
@@ -83,7 +72,6 @@ const Login = () => {
                             className="max-h-40 object-contain"
                         />
                     </div>
-
 
                     <div
                         className={`fixed inset-y-0 right-0 w-1/2 bg-[#592644] z-50 flex items-center justify-start transition-transform duration-[1200ms] ease-in-out ${
@@ -98,7 +86,6 @@ const Login = () => {
                     </div>
                 </>
             )}
-
 
             <div className="flex justify-center items-center min-h-screen bg-gray-100 transition-all duration-500">
                 <div className="w-full max-w-md p-6 z-10">
@@ -115,7 +102,7 @@ const Login = () => {
                         <p className="text-sm text-gray-600">Ingrese su correo institucional</p>
                     </div>
 
-                    <div className="mt-5 space-y-3 transition-all duration-300">
+                    <form onSubmit={handleLogin} className="mt-5 space-y-3 transition-all duration-300">
                         <div>
                             <label className="block text-sm font-semibold">Correo</label>
                             <input
@@ -124,6 +111,7 @@ const Login = () => {
                                 onChange={(e) => setCorreo(e.target.value)}
                                 placeholder="ejemplo@est.univalle.edu"
                                 className="w-full mt-1 p-2 border border-gray-300 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#592644]"
+                                required
                             />
                         </div>
 
@@ -135,20 +123,21 @@ const Login = () => {
                                 onChange={(e) => setContrasena(e.target.value)}
                                 placeholder="********"
                                 className="w-full mt-1 p-2 border border-gray-300 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#592644]"
+                                required
                             />
                         </div>
-                    </div>
 
-                    {errorMessage && (
-                        <p className="text-red-500 text-sm mt-2">{errorMessage}</p>
-                    )}
+                        {errorMessage && (
+                            <p className="text-red-500 text-sm mt-2">{errorMessage}</p>
+                        )}
 
-                    <button
-                        className="w-full mt-5 p-2 bg-[#592644] text-white font-bold rounded-2xl transform transition-transform duration-200 hover:scale-105"
-                        onClick={handleLogin}
-                    >
-                        Iniciar sesión
-                    </button>
+                        <button
+                            type="submit"
+                            className="w-full mt-5 p-2 bg-[#592644] text-white font-bold rounded-2xl transform transition-transform duration-200 hover:scale-105"
+                        >
+                            Iniciar sesión
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>

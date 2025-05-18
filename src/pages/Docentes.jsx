@@ -222,7 +222,7 @@ Insumos no devueltos: ${data.insumos_no_devueltos.length}`);
             <Sidebar className="hidden md:block" />
             <main className="flex-1 p-4 md:p-6 md:ml-60 overflow-auto">
                 <div className="flex justify-between items-center mb-6">
-                    <h1 className="text-2xl font-bold text-black">Gestión de solicitudes de docentes</h1>
+                    <h1 className="text-2xl font-bold text-black">Gestión de Solicitudes de Docentes</h1>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">

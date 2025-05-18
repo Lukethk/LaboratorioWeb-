@@ -8,6 +8,7 @@ import Docentes from "./pages/Docentes.jsx";
 import Alumnos from "./pages/Alumnos.jsx";
 import Register from "./pages/Register.jsx";
 import DetalleSolicitud from './components/DetalleSolicitud';
+import Agenda from './pages/Agenda';
 
 function App() {
     return (
@@ -22,6 +23,7 @@ function App() {
                 <Route path="/solicitudes" element={<Solicitudes />} />
                 <Route path="/docentes" element={<Docentes />} />
                 <Route path="/alumnos" element={<Alumnos />} />
+                <Route path="/agenda" element={<Agenda />} />
                 <Route path="/DetalleSolicitud" element={<DetalleSolicitud />} />
             </Routes>
         </Router>

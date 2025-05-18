@@ -4,35 +4,68 @@ import { useNavigate, useLocation } from "react-router-dom";
 const Sidebar = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [mensaje, setMensaje] = useState(null);
+    const [showCurtains, setShowCurtains] = useState(false);
+    const [curtainsClosed, setCurtainsClosed] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
 
     const links = [
+        { path: "/Docentes", label: "Solicitudes", icon: "fas fa-user" },
+        { path: "/Solicitudes", label: "Requerimientos", icon: "fas fa-clipboard-list" },
+        { path: "/agenda", label: "Agenda", icon: "fas fa-calendar-alt" },
         { path: "/dashboard", label: "Estadisticas", icon: "fas fa-chart-line" },
         { path: "/supplies", label: "Suministros", icon: "fas fa-boxes" },
         { path: "/reportes", label: "Reportes", icon: "fas fa-file-alt" },
-        { path: "/Docentes", label: "Docentes", icon: "fas fa-user" },
-        { path: "/Alumnos", label: "Alumnos", icon: "fas fa-graduation-cap" },
-        { path: "/Solicitudes", label: "Solicitudes", icon: "fas fa-clipboard-list" }
-
-
+        { path: "/Alumnos", label: "Alumnos", icon: "fas fa-graduation-cap" }
     ];
 
     const toggleSidebar = () => {
         setIsSidebarOpen(!isSidebarOpen);
     };
 
-
-
     const handleLogout = () => {
-        navigate("/login");
+        setShowCurtains(true);
+        setTimeout(() => {
+            setCurtainsClosed(true);
+        }, 100);
+
+        setTimeout(() => {
+            sessionStorage.removeItem("auth");
+            sessionStorage.removeItem("dashboardEntered");
+            navigate("/login");
+        }, 2000);
     };
-
-
-
 
     return (
         <div>
+            {showCurtains && (
+                <>
+                    <div
+                        className={`fixed inset-y-0 left-0 w-1/2 bg-[#592644] z-50 flex items-center justify-end transition-transform duration-[1200ms] ease-in-out ${
+                            curtainsClosed ? "translate-x-0" : "-translate-x-full"
+                        }`}
+                    >
+                        <img
+                            src="/assets/logo-left.png"
+                            alt="Logo Izquierda"
+                            className="max-h-40 object-contain"
+                        />
+                    </div>
+
+                    <div
+                        className={`fixed inset-y-0 right-0 w-1/2 bg-[#592644] z-50 flex items-center justify-start transition-transform duration-[1200ms] ease-in-out ${
+                            curtainsClosed ? "translate-x-0" : "translate-x-full"
+                        }`}
+                    >
+                        <img
+                            src="/assets/logo-right.png"
+                            alt="Logo Derecho"
+                            className="max-h-40 object-contain"
+                        />
+                    </div>
+                </>
+            )}
+
             <button
                 onClick={toggleSidebar}
                 className="lg:hidden fixed top-6 left-6 z-50 p-3 bg-white text-[#592644] rounded-md shadow-lg"
@@ -41,13 +74,12 @@ const Sidebar = () => {
             </button>
 
             <aside
-                className={`fixed top-0 left-0 h-full w-60 bg-[#592644] text-white p-6 shadow-lg flex flex-col transition-transform duration-300 ease-in-out transform z-50 ${
+                className={`fixed top-0 left-0 h-full w-60 bg-[#592644] text-white p-6 shadow-lg flex flex-col transition-transform duration-300 ease-in-out transform z-40 ${
                     isSidebarOpen ? "translate-x-0" : "-translate-x-full"
                 } lg:translate-x-0 lg:flex lg:flex-col lg:w-60`}
             >
-
                 <div className="mb-10 flex justify-center">
-                    <a href="/dashboard" className="block">
+                    <a href="/Docentes" className="block">
                         <img
                             src="/assets/logo%20(1).png"
                             alt="Logo"
@@ -75,12 +107,11 @@ const Sidebar = () => {
                     <div
                         onClick={handleLogout}
                         className="flex items-center space-x-3 p-3 mt-auto rounded-xl cursor-pointer text-white hover:bg-white/20 transition transform hover:scale-105"
-                        >
-                    <i className="fas fa-sign-out-alt text-lg"></i>
-                    <span className="font-medium">Cerrar Sesión</span>
-        </div>
-
-</nav>
+                    >
+                        <i className="fas fa-sign-out-alt text-lg"></i>
+                        <span className="font-medium">Cerrar Sesión</span>
+                    </div>
+                </nav>
             </aside>
 
             {mensaje && (
