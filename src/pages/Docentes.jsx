@@ -43,6 +43,10 @@ const SolicitudesUso = () => {
     const [devolucionParcial, setDevolucionParcial] = useState({});
     const [isCompleting, setIsCompleting] = useState(false);
 
+    // Estados para la animación de cortinas
+    const [showCurtains, setShowCurtains] = useState(true);
+    const [animateOpen, setAnimateOpen] = useState(false);
+
     const fetchData = async () => {
         try {
             setLoading(true);
@@ -58,6 +62,24 @@ const SolicitudesUso = () => {
 
     useEffect(() => {
         fetchData();
+
+        // Lógica de animación de cortinas
+        const hasEnteredBefore = sessionStorage.getItem("solicitudesEntered");
+
+        if (!hasEnteredBefore) {
+            setTimeout(() => {
+                setAnimateOpen(true);
+            }, 50);
+
+            const timeout = setTimeout(() => {
+                setShowCurtains(false);
+                sessionStorage.setItem("solicitudesEntered", "true");
+            }, 3000);
+
+            return () => clearTimeout(timeout);
+        } else {
+            setShowCurtains(false);
+        }
     }, []);
 
     const prioridades = { Pendiente: 1, Aprobada: 2, Completada: 3, Rechazada: 4 };
@@ -219,6 +241,34 @@ Insumos no devueltos: ${data.insumos_no_devueltos.length}`);
 
     return (
         <div className="flex h-screen bg-gray-50">
+            {/* Animación de cortinas */}
+            {showCurtains && (
+                <>
+                    <div
+                        className={`fixed inset-y-0 left-0 w-1/2 bg-[#592644] z-50 flex items-center justify-end transition-transform duration-[1200ms] ease-in-out ${
+                            animateOpen ? "-translate-x-full" : "translate-x-0"
+                        }`}
+                    >
+                        <img
+                            src="/assets/logo-left.png"
+                            alt="Logo Izquierda"
+                            className="max-h-40 object-contain"
+                        />
+                    </div>
+                    <div
+                        className={`fixed inset-y-0 right-0 w-1/2 bg-[#592644] z-50 flex items-center justify-start transition-transform duration-[1200ms] ease-in-out ${
+                            animateOpen ? "translate-x-full" : "translate-x-0"
+                        }`}
+                    >
+                        <img
+                            src="/assets/logo-right.png"
+                            alt="Logo Derecha"
+                            className="max-h-40 object-contain"
+                        />
+                    </div>
+                </>
+            )}
+
             <Sidebar className="hidden md:block" />
             <main className="flex-1 p-4 md:p-6 md:ml-60 overflow-auto">
                 <div className="flex justify-between items-center mb-6">
@@ -386,8 +436,8 @@ Insumos no devueltos: ${data.insumos_no_devueltos.length}`);
                                                                     />
                                                                 </div>
                                                                 <span className="font-semibold text-center text-red-500">
-                                                    {insumo.cantidad_total - (devolucionParcial[insumo.id_insumo] ?? insumo.cantidad_total)}
-                                                </span>
+                                                                    {insumo.cantidad_total - (devolucionParcial[insumo.id_insumo] ?? insumo.cantidad_total)}
+                                                                </span>
                                                             </>
                                                         )}
                                                     </div>

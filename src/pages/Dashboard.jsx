@@ -118,8 +118,6 @@ const Dashboard = () => {
     const [solicitudes, setSolicitudes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [showCurtains, setShowCurtains] = useState(true);
-    const [animateOpen, setAnimateOpen] = useState(false);
 
     const fetchData = async () => {
         try {
@@ -149,23 +147,6 @@ const Dashboard = () => {
 
     useEffect(() => {
         fetchData();
-
-        const hasEnteredBefore = sessionStorage.getItem("dashboardEntered");
-
-        if (!hasEnteredBefore) {
-            setTimeout(() => {
-                setAnimateOpen(true);
-            }, 50);
-
-            const timeout = setTimeout(() => {
-                setShowCurtains(false);
-                sessionStorage.setItem("dashboardEntered", "true");
-            }, 3000);
-
-            return () => clearTimeout(timeout);
-        } else {
-            setShowCurtains(false);
-        }
     }, []);
 
     const totalInsumos = insumos.length;
@@ -181,33 +162,6 @@ const Dashboard = () => {
     return (
         <div className="flex flex-col lg:flex-row bg-gray-50 min-h-screen">
             <Sidebar />
-            {showCurtains && (
-                <>
-                    <div
-                        className={`fixed inset-y-0 left-0 w-1/2 bg-[#592644] z-50 flex items-center justify-end transition-transform duration-[1200ms] ease-in-out ${
-                            animateOpen ? "-translate-x-full" : "translate-x-0"
-                        }`}
-                    >
-                        <img
-                            src="/assets/logo-left.png"
-                            alt="Logo Izquierda"
-                            className="max-h-40 object-contain"
-                        />
-                    </div>
-                    <div
-                        className={`fixed inset-y-0 right-0 w-1/2 bg-[#592644] z-50 flex items-center justify-start transition-transform duration-[1200ms] ease-in-out ${
-                            animateOpen ? "translate-x-full" : "translate-x-0"
-                        }`}
-                    >
-                        <img
-                            src="/assets/logo-right.png"
-                            alt="Logo Derecha"
-                            className="max-h-40 object-contain"
-                        />
-                    </div>
-                </>
-            )}
-
             <main className="flex-1 p-4 sm:p-6 lg:ml-60">
                 <h2 className="text-xl md:text-2xl font-bold text-black mb-6 md:mb-10">Gestión de Laboratorio</h2>
 
