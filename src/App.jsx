@@ -9,6 +9,7 @@ import Alumnos from "./pages/Alumnos.jsx";
 import Register from "./pages/Register.jsx";
 import DetalleSolicitud from './components/DetalleSolicitud';
 import Agenda from './pages/Agenda';
+import MovimientosdeInventario from "./pages/MovimientosdeInventario";
 
 function App() {
     return (
@@ -25,6 +26,7 @@ function App() {
                 <Route path="/alumnos" element={<Alumnos />} />
                 <Route path="/agenda" element={<Agenda />} />
                 <Route path="/DetalleSolicitud" element={<DetalleSolicitud />} />
+                <Route path="/MovimientosdeInventario" element={<MovimientosdeInventario />} />
             </Routes>
         </Router>
     );

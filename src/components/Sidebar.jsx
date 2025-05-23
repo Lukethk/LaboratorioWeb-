@@ -16,7 +16,8 @@ const Sidebar = () => {
         { path: "/dashboard", label: "Estadisticas", icon: "fas fa-chart-line" },
         { path: "/supplies", label: "Suministros", icon: "fas fa-boxes" },
         { path: "/reportes", label: "Reportes", icon: "fas fa-file-alt" },
-        { path: "/Alumnos", label: "Alumnos", icon: "fas fa-graduation-cap" }
+        { path: "/Alumnos", label: "Alumnos", icon: "fas fa-graduation-cap" },
+        { path: "/MovimientosdeInventario", label: "Movimientos", icon: "fas fa-exchange-alt" },
     ];
 
     const toggleSidebar = () => {
