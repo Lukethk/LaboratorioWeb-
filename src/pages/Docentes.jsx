@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from "react";
+import emailjs from '@emailjs/browser';
 import Sidebar from "../components/Sidebar.jsx";
 import SearchBar from "../components/SearchBar";
 import SkeletonCard from "../components/SkeletonCard.jsx";
 import { useSidebar } from "../context/SidebarContext";
 
 const API_URL = "https://universidad-la9h.onrender.com";
+
+// Inicializar EmailJS
+emailjs.init("YGtXs0j-jHwKbqIaq");
 
 const summaryCards = [
     { title: 'Total Solicitudes', key: 'total' },
@@ -48,6 +52,74 @@ const SolicitudesUso = () => {
     // Estados para la animación de cortinas
     const [showCurtains, setShowCurtains] = useState(true);
     const [animateOpen, setAnimateOpen] = useState(false);
+
+    const [showDocentesModal, setShowDocentesModal] = useState(false);
+    const [docentes, setDocentes] = useState([]);
+    const [loadingDocentes, setLoadingDocentes] = useState(false);
+    const [selectedLab, setSelectedLab] = useState({});
+    const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+    const [pendingChange, setPendingChange] = useState(null);
+    const [searchDocente, setSearchDocente] = useState("");
+    const [showRechazoModal, setShowRechazoModal] = useState(false);
+    const [motivoRechazo, setMotivoRechazo] = useState("");
+    const [solicitudRechazo, setSolicitudRechazo] = useState(null);
+    const [enviandoCorreo, setEnviandoCorreo] = useState(false);
+
+    const [laboratorios, setLaboratorios] = useState([]);
+
+    const abrirModalAsignaciones = async () => {
+        setShowDocentesModal(true);        // muestra el modal
+
+        try {
+            setLoadingDocentes(true);        // spinner mientras carga
+
+            // Primero intentamos obtener los docentes
+            console.log('Intentando obtener docentes...');
+            const docentesResponse = await fetch(`${API_URL}/docentes`);
+            console.log('Respuesta de docentes:', docentesResponse.status);
+            
+            if (!docentesResponse.ok) {
+                throw new Error(`Error al obtener docentes: ${docentesResponse.status}`);
+            }
+            
+            const docentesData = await docentesResponse.json();
+            console.log('Datos de docentes recibidos:', docentesData);
+            setDocentes(docentesData);
+
+            // Luego intentamos obtener las aulas
+            console.log('Intentando obtener aulas...');
+            const aulasResponse = await fetch(`${API_URL}/aulas`);
+            console.log('Respuesta de aulas:', aulasResponse.status);
+            
+            if (!aulasResponse.ok) {
+                const errorData = await aulasResponse.json().catch(() => ({}));
+                console.error('Error detallado de aulas:', errorData);
+                throw new Error(`Error al obtener aulas: ${aulasResponse.status} - ${JSON.stringify(errorData)}`);
+            }
+            
+            const aulasData = await aulasResponse.json();
+            console.log('Datos de aulas recibidos:', aulasData);
+            
+            if (!Array.isArray(aulasData)) {
+                throw new Error('Los datos de aulas no son un array');
+            }
+
+            setLaboratorios(aulasData);
+
+            // pre-seleccionar el aula ya asignada
+            const prefills = {};
+            docentesData.forEach(d => {
+                if (d.id_aula) prefills[d.id_docente] = d.id_aula;
+            });
+            setSelectedLab(prefills);
+
+        } catch (err) {
+            console.error("Error cargando docentes/aulas:", err);
+            setLaboratorios([]); // En caso de error, establecer un array vacío
+        } finally {
+            setLoadingDocentes(false);
+        }
+    };
 
     const fetchData = async () => {
         try {
@@ -122,23 +194,9 @@ const SolicitudesUso = () => {
     };
 
     const handleRechazar = async (id) => {
-        try {
-            const response = await fetch(`${API_URL}/solicitudes-uso/${id}/estado`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ estado: 'Rechazada' }),
-            });
-
-            if (!response.ok) throw new Error('Error al rechazar');
-
-            setSolicitudes((prevSolicitudes) =>
-                prevSolicitudes.map((s) =>
-                    s.id_solicitud === id ? { ...s, estado: 'Rechazada' } : s
-                )
-            );
-        } catch (error) {
-            console.error('Error en handleRechazar:', error);
-        }
+        const solicitud = solicitudes.find(s => s.id_solicitud === id);
+        setSolicitudRechazo(solicitud);
+        setShowRechazoModal(true);
     };
 
     const handleCompletar = async (id) => {
@@ -241,6 +299,151 @@ Insumos no devueltos: ${data.insumos_no_devueltos.length}`);
 
     const años = [...new Set(solicitudes.map(s => new Date(s.fecha_hora_inicio).getFullYear()))];
 
+    const handleLabChange = (docenteId, labValue) => {
+        setPendingChange({ docenteId, labValue });
+        setShowConfirmDialog(true);
+    };
+
+    const confirmLabChange = async () => {
+        if (pendingChange) {
+            setSelectedLab(prev => ({
+                ...prev,
+                [pendingChange.docenteId]: pendingChange.labValue
+            }));
+
+            try {
+                const response = await fetch(`${API_URL}/docentes/${pendingChange.docenteId}/asignar-aula`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id_aula: pendingChange.labValue }),
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message);
+                // Puedes mostrar un mensaje de éxito si lo deseas
+            } catch (error) {
+                // Puedes mostrar un mensaje de error si lo deseas
+            }
+        }
+        setShowConfirmDialog(false);
+        setPendingChange(null);
+    };
+
+    const cancelLabChange = () => {
+        setShowConfirmDialog(false);
+        setPendingChange(null);
+    };
+
+    const filteredDocentes = docentes.filter(docente => 
+        docente.nombre.toLowerCase().startsWith(searchDocente.toLowerCase()) ||
+        docente.apellido.toLowerCase().startsWith(searchDocente.toLowerCase())
+    );
+
+    const confirmarRechazo = async () => {
+        if (!motivoRechazo.trim()) {
+            alert("Por favor, ingrese un motivo para el rechazo");
+            return;
+        }
+
+        try {
+            setEnviandoCorreo(true);
+            
+            // Verificar el estado actual de la solicitud
+            const solicitudActual = solicitudes.find(s => s.id_solicitud === solicitudRechazo.id_solicitud);
+            if (!solicitudActual) {
+                throw new Error('No se encontró la solicitud');
+            }
+
+            // Solo permitir rechazar si está en estado Pendiente
+            if (solicitudActual.estado !== 'Pendiente') {
+                throw new Error(`No se puede rechazar una solicitud en estado ${solicitudActual.estado}`);
+            }
+
+            // Actualizar el estado de la solicitud
+            const response = await fetch(`${API_URL}/solicitudes-uso/${solicitudRechazo.id_solicitud}/estado`, {
+                method: 'PUT',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ 
+                    estado: 'Rechazada',
+                    motivo: motivoRechazo
+                }),
+            });
+
+            if (!response.ok) {
+                let errorMessage = 'Error al procesar el rechazo';
+                try {
+                    const errorData = await response.json();
+                    errorMessage = errorData.message || errorMessage;
+                } catch (e) {
+                    console.error('Error parsing response:', e);
+                }
+                throw new Error(errorMessage);
+            }
+
+            try {
+                // Enviar correo usando EmailJS
+                const templateParams = {
+                    to_email: solicitudRechazo.correo_docente,
+                    to_name: solicitudRechazo.docente_nombre,
+                    motivo: motivoRechazo,
+                    fecha: new Date(solicitudRechazo.fecha_hora_inicio).toLocaleDateString(),
+                    laboratorio: solicitudRechazo.laboratorio_nombre,
+                    from_name: "Sistema de Laboratorios",
+                    solicitud_id: solicitudRechazo.id_solicitud
+                };
+
+                console.log("templateParams:", templateParams);
+
+                const emailResponse = await emailjs.send(
+                    'service_hj7ti2h',
+                    'template_jzzoq1a',
+                    templateParams
+                );
+
+                if (emailResponse.status !== 200) {
+                    throw new Error('Error al enviar el correo');
+                }
+
+                setSolicitudes((prevSolicitudes) =>
+                    prevSolicitudes.map((s) =>
+                        s.id_solicitud === solicitudRechazo.id_solicitud 
+                            ? { ...s, estado: 'Rechazada', motivo_rechazo: motivoRechazo } 
+                            : s
+                    )
+                );
+
+                setShowRechazoModal(false);
+                setMotivoRechazo("");
+                setSolicitudRechazo(null);
+
+            } catch (emailError) {
+                console.error('Error al enviar correo:', emailError);
+                // Si falla el envío del correo, al menos actualizamos el estado
+                setSolicitudes((prevSolicitudes) =>
+                    prevSolicitudes.map((s) =>
+                        s.id_solicitud === solicitudRechazo.id_solicitud 
+                            ? { ...s, estado: 'Rechazada', motivo_rechazo: motivoRechazo } 
+                            : s
+                    )
+                );
+            }
+
+        } catch (error) {
+            console.error('Error:', error);
+            alert("Error al procesar el rechazo: " + error.message);
+        } finally {
+            setEnviandoCorreo(false);
+        }
+    };
+
+    const cancelarRechazo = () => {
+        setShowRechazoModal(false);
+        setMotivoRechazo("");
+        setSolicitudRechazo(null);
+    };
+
     return (
         <div className="flex h-screen bg-gray-50">
             {/* Animación de cortinas */}
@@ -275,6 +478,17 @@ Insumos no devueltos: ${data.insumos_no_devueltos.length}`);
             <main className={`flex-1 p-4 md:p-6 transition-all duration-300 ${isSidebarOpen ? 'md:ml-60' : 'md:ml-20'}`}>
                 <div className="flex justify-between items-center mb-6">
                     <h1 className="text-2xl font-bold text-black">Gestión de Solicitudes de Docentes</h1>
+                </div>
+
+                <div className="flex justify-between items-center mb-6">
+                    <div className="flex items-center gap-2">
+                        <button 
+                            onClick={abrirModalAsignaciones}
+                            className="bg-[#592644] text-white py-2 px-4 rounded-lg hover:bg-[#4a1f38] transition duration-200"
+                        >
+                            Asignaciones de Laboratorios
+                        </button>
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
@@ -478,6 +692,147 @@ Insumos no devueltos: ${data.insumos_no_devueltos.length}`);
                                     </div>
                                 </>
                             )}
+                        </div>
+                    </div>
+                )}
+
+                {/* Modal de Docentes */}
+                {showDocentesModal && (
+                    <div className="fixed inset-0 bg-opacity-40 backdrop-blur-sm flex items-center justify-center z-50">
+                        <div className="bg-white p-6 rounded-3xl w-[95%] max-w-4xl max-h-[90vh] overflow-auto shadow-2xl">
+                            <div className="flex justify-between items-center mb-6">
+                                <h2 className="text-2xl font-bold text-[#592644]">Asignaciones de Laboratorios</h2>
+                                <button 
+                                    onClick={() => setShowDocentesModal(false)}
+                                    className="text-gray-500 hover:text-gray-700"
+                                >
+                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+
+                            {/* Barra de búsqueda */}
+                            <div className="mb-6">
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        placeholder="Buscar docente por nombre..."
+                                        value={searchDocente}
+                                        onChange={(e) => setSearchDocente(e.target.value)}
+                                        className="w-full p-3 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#592644] focus:border-transparent"
+                                    />
+                                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {loadingDocentes ? (
+                                <div className="flex justify-center items-center h-64">
+                                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#592644]"></div>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {filteredDocentes.map((docente) => (
+                                        <div key={docente.id_docente} className="bg-white p-4 rounded-lg shadow border border-gray-200 hover:shadow-lg transition-shadow duration-200">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-full bg-[#592644] flex items-center justify-center text-white font-bold">
+                                                    {docente.nombre.charAt(0)}{docente.apellido.charAt(0)}
+                                                </div>
+                                                <div>
+                                                    <h3 className="font-bold text-lg">{docente.nombre} {docente.apellido}</h3>
+                                                    <p className="text-gray-600 text-sm">{docente.correo}</p>
+                                                </div>
+                                            </div>
+                                            <div className="mt-4">
+                                                <label htmlFor={`lab-${docente.id_docente}`} className="block text-sm font-medium text-gray-700 text-[#592644]">Laboratorio asignado:</label>
+                                                <select
+                                                    className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#592644] focus:border-transparent"
+                                                    value={selectedLab[docente.id_docente] || ""}
+                                                    onChange={(e) => handleLabChange(docente.id_docente, e.target.value)}
+                                                >
+                                                    <option value="" disabled>Seleccionar Laboratorio</option>
+                                                    {console.log('Estado actual de laboratorios:', laboratorios)}
+                                                    {Array.isArray(laboratorios) && laboratorios.map(aula => {
+                                                        console.log('Renderizando aula:', aula);
+                                                        return (
+                                                            <option key={aula.id_aula} value={aula.id_aula}>
+                                                                {aula.nombre_aula}
+                                                            </option>
+                                                        );
+                                                    })}
+                                                </select>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* Diálogo de Confirmación */}
+                {showConfirmDialog && (
+                    <div className="fixed inset-0 bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-[60]">
+                        <div className="bg-white p-6 rounded-xl max-w-md w-full mx-4 shadow-2xl">
+                            <h3 className="text-xl font-bold text-[#592644] mb-4">Confirmar Cambio</h3>
+                            <p className="text-gray-600 mb-6">
+                                ¿Estás seguro que deseas asignar el laboratorio {pendingChange?.labValue} a este docente?
+                            </p>
+                            <div className="flex justify-end gap-4">
+                                <button
+                                    onClick={cancelLabChange}
+                                    className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={confirmLabChange}
+                                    className="px-4 py-2 bg-[#592644] text-white rounded-lg hover:bg-[#4a1f38] transition-colors"
+                                >
+                                    Confirmar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Modal de Rechazo */}
+                {showRechazoModal && (
+                    <div className="fixed inset-0 bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-[60]">
+                        <div className="bg-white p-6 rounded-xl max-w-md w-full mx-4 shadow-2xl">
+                            <h3 className="text-xl font-bold text-[#592644] mb-4">Motivo del Rechazo</h3>
+                            <div className="mb-4">
+                                <label htmlFor="motivoRechazo" className="block text-sm font-medium text-gray-700 mb-2">
+                                    Por favor, indique el motivo del rechazo:
+                                </label>
+                                <textarea
+                                    id="motivoRechazo"
+                                    value={motivoRechazo}
+                                    onChange={(e) => setMotivoRechazo(e.target.value)}
+                                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#592644] focus:border-transparent min-h-[120px]"
+                                    placeholder="Escriba aquí el motivo del rechazo..."
+                                />
+                            </div>
+                            <div className="flex justify-end gap-4">
+                                <button
+                                    onClick={cancelarRechazo}
+                                    className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+                                    disabled={enviandoCorreo}
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={confirmarRechazo}
+                                    className="px-4 py-2 bg-[#592644] text-white rounded-lg hover:bg-[#4a1f38] transition-colors disabled:opacity-50"
+                                    disabled={enviandoCorreo}
+                                >
+                                    {enviandoCorreo ? 'Enviando...' : 'Confirmar Rechazo'}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}
