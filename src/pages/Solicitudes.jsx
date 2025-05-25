@@ -5,6 +5,7 @@ import { pdf, PDFDownloadLink } from "@react-pdf/renderer";
 import FormularioPDF from '../components/FormularioPDF';
 import axios from 'axios';
 import { EyeIcon } from "lucide-react";
+import { useSidebar } from "../context/SidebarContext";
 const API_URL = "https://universidad-la9h.onrender.com";
 
 const Solicitudes = () => {
@@ -30,6 +31,7 @@ const Solicitudes = () => {
         fecha: "",
     });
     const [items, setItems] = useState([]);
+    const { isSidebarOpen } = useSidebar();
 
     const fetchSolicitudes = async () => {
         try {
@@ -222,7 +224,7 @@ const Solicitudes = () => {
         <div className="flex flex-col lg:flex-row h-screen">
             <Sidebar className="hidden lg:block" />
 
-            <div className="lg:ml-64 flex-1 p-4 bg-white overflow-auto">
+            <div className={`flex-1 p-4 bg-white overflow-auto transition-all duration-300 ${isSidebarOpen ? 'lg:ml-64' : 'lg:ml-20'}`}>
                 <div className="flex justify-between items-center mb-6">
                     <h1 className="text-2xl font-bold">Solicitudes de Insumos</h1>
                     <button

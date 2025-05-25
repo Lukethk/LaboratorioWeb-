@@ -4,6 +4,8 @@ import Sidebar from "../components/Sidebar.jsx";
 import GraficosDashboard from "../components/GraficosDashboard";
 import GraficoLab from "../components/GraficoLab";
 import SkeletonDashboard from "../components/SkeletonDashboard.jsx";
+import { useSidebar } from "../context/SidebarContext";
+
 const API_URL = "https://universidad-la9h.onrender.com";
 
 const Card = ({ title, value, subtitle, redirectTo, icon }) => {
@@ -41,70 +43,48 @@ const AlertsTable = ({ alerts, error, reload }) => {
         );
     }
 
+    const getAlertStyle = (alerta) => {
+        if (alerta.estado === 'activa') {
+            return "from-red-600 to-red-500"; // Alerta activa
+        } else {
+            return "from-gray-500 to-gray-400"; // Alerta inactiva
+        }
+    };
+
     return (
-        <div className="flex flex-col gap-5 mt-4">
-            {alerts.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {alerts
-                        .sort((a, b) => a.estado.localeCompare(b.estado))
-                        .map((alerta, index) => {
-                            let bgColor = "";
-                            let badgeColor = "";
-                            switch (alerta.estado) {
-                                case "Activa":
-                                    bgColor = "bg-red-400";
-                                    badgeColor = "bg-red-500";
-                                    break;
-                                case "Inactiva":
-                                    bgColor = "bg-gray-500";
-                                    badgeColor = "bg-gray-500";
-                                    break;
-                                case "Resuelta":
-                                    bgColor = "bg-green-600";
-                                    badgeColor = "bg-green-700";
-                                    break;
-                                default:
-                                    bgColor = "bg-gray-600";
-                                    badgeColor = "bg-gray-700";
-                                    break;
-                            }
-
-                            return (
-                                <div
-                                    key={index}
-                                    className={`relative ${bgColor} rounded-2xl p-3 shadow-lg hover:shadow-xl transition w-full h-36 flex`}
-                                >
-                                    {/* Badge de estado */}
-                                    <span
-                                        className={`absolute top-2 right-2 px-2 py-1 text-xxs font-semibold text-white rounded ${badgeColor}`}
-                                    >
-                                {alerta.estado.toUpperCase()}
-                            </span>
-
-                                    {/* Icono */}
-                                    <div className="w-12 h-12 flex items-center justify-center mr-3 bg-[#ffffff22] rounded-full">
-                                        <i className="fa fa-bell text-white text-3xl"></i>
-                                    </div>
-
-                                    {/* Contenido */}
-                                    <div className="flex-1">
-                                        <p className="text-sm text-white mb-1">
-                                            <span className="font-medium">Nombre:</span> {alerta.insumo_nombre || 'No disponible'}
-                                        </p>
-                                        <p className="text-xs text-white mb-1">
-                                            <span className="font-medium">Disponibilidad Actual:</span> {alerta.stock_actual || 'No disponible'}
-                                        </p>
-                                        <p className="text-xs text-white mb-1">
-                                            <span className="font-medium">Mínimo:</span> {alerta.stock_minimo || 'No disponible'} | <span className="font-medium">Máximo:</span> {alerta.stock_maximo || 'No disponible'}
-                                        </p>
-                                        <p className="text-xs text-white mb-1">
-                                            <span className="font-medium">Fecha:</span> {alerta.fecha ? new Date(alerta.fecha).toLocaleDateString() : 'No disponible'}
-                                        </p>
-                                    </div>
+        <div className="space-y-4">
+            {alerts && alerts.length > 0 ? (
+                alerts.map((alerta, index) => {
+                    return (
+                        <div
+                            key={index}
+                            className={`bg-gradient-to-r ${getAlertStyle(alerta)} rounded-xl p-4 shadow-lg`}
+                        >
+                            <div className="flex items-start gap-4">
+                                {/* Icono */}
+                                <div className="bg-white/20 p-3 rounded-lg">
+                                    <i className="fas fa-exclamation-triangle text-white text-xl"></i>
                                 </div>
-                            );
-                        })}
-                </div>
+
+                                {/* Contenido */}
+                                <div className="flex-1">
+                                    <p className="text-sm text-white mb-1">
+                                        <span className="font-medium">Nombre:</span> {alerta.insumo_nombre || 'No disponible'}
+                                    </p>
+                                    <p className="text-xs text-white mb-1">
+                                        <span className="font-medium">Disponibilidad Actual:</span> {alerta.stock_actual || 'No disponible'}
+                                    </p>
+                                    <p className="text-xs text-white mb-1">
+                                        <span className="font-medium">Mínimo:</span> {alerta.stock_minimo || 'No disponible'} | <span className="font-medium">Máximo:</span> {alerta.stock_maximo || 'No disponible'}
+                                    </p>
+                                    <p className="text-xs text-white mb-1">
+                                        <span className="font-medium">Fecha:</span> {alerta.fecha ? new Date(alerta.fecha).toLocaleDateString() : 'No disponible'}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })
             ) : (
                 <p className="text-center text-gray-500">No hay alertas disponibles.</p>
             )}
@@ -118,6 +98,7 @@ const Dashboard = () => {
     const [solicitudes, setSolicitudes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const { isSidebarOpen } = useSidebar();
 
     const fetchData = async () => {
         try {
@@ -156,13 +137,12 @@ const Dashboard = () => {
         return stockActual <= stockMinimo;
     }).length;
 
-    // Calcular solicitudes completadas
     const solicitudesCompletadas = solicitudes.filter(s => s.estado === 'Completada').length;
 
     return (
         <div className="flex flex-col lg:flex-row bg-gray-50 min-h-screen">
             <Sidebar />
-            <main className="flex-1 p-4 sm:p-6 lg:ml-60">
+            <main className={`flex-1 p-4 sm:p-6 transition-all duration-300 ${isSidebarOpen ? 'lg:ml-60' : 'lg:ml-20'}`}>
                 <h2 className="text-xl md:text-2xl font-bold text-black mb-6 md:mb-10">Gestión de Laboratorio</h2>
 
                 {loading ? (
@@ -202,7 +182,7 @@ const Dashboard = () => {
                                 </div>
                             </section>
 
-                            <aside className="w-full xl:w-[450px] bg-[#59264426] p-4 -mt-7 rounded-xl  min-h-[400px]">
+                            <aside className="w-full xl:w-[450px] bg-[#59264426] p-4 -mt-7 rounded-xl min-h-[400px]">
                                 <div className="flex flex-col gap-6">
                                     <GraficoLab className="w-full h-64 rounded-xl shadow-lg" />
                                     <GraficosDashboard insumos={insumos} className="w-full h-64 rounded-2xl shadow-lg" />

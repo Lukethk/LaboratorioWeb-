@@ -1,11 +1,15 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useSidebar } from "../context/SidebarContext";
 
 const Sidebar = () => {
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const { isSidebarOpen, setIsSidebarOpen } = useSidebar();
+    const [isPinned, setIsPinned] = useState(false);
     const [mensaje, setMensaje] = useState(null);
     const [showCurtains, setShowCurtains] = useState(false);
     const [curtainsClosed, setCurtainsClosed] = useState(false);
+    const [isHovered, setIsHovered] = useState(false);
+    const sidebarRef = useRef(null);
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -20,8 +24,52 @@ const Sidebar = () => {
         { path: "/MovimientosdeInventario", label: "Movimientos", icon: "fas fa-exchange-alt" },
     ];
 
+    useEffect(() => {
+        let timeoutId;
+
+        const handleMouseEnter = () => {
+            clearTimeout(timeoutId);
+            setIsHovered(true);
+            if (!isPinned) {
+                setIsSidebarOpen(true);
+            }
+        };
+
+        const handleMouseLeave = () => {
+            timeoutId = setTimeout(() => {
+                setIsHovered(false);
+                if (!isPinned) {
+                    setIsSidebarOpen(false);
+                }
+            }, 300);
+        };
+
+        const sidebar = sidebarRef.current;
+        if (sidebar) {
+            sidebar.addEventListener('mouseenter', handleMouseEnter);
+            sidebar.addEventListener('mouseleave', handleMouseLeave);
+        }
+
+        return () => {
+            if (sidebar) {
+                sidebar.removeEventListener('mouseenter', handleMouseEnter);
+                sidebar.removeEventListener('mouseleave', handleMouseLeave);
+            }
+            clearTimeout(timeoutId);
+        };
+    }, [isPinned, setIsSidebarOpen]);
+
     const toggleSidebar = () => {
-        setIsSidebarOpen(!isSidebarOpen);
+        if (!isPinned) {
+            setIsSidebarOpen(!isSidebarOpen);
+        }
+    };
+
+    const togglePin = () => {
+        setIsPinned(!isPinned);
+        if (!isPinned) {
+            setIsSidebarOpen(true);
+        }
     };
 
     const handleLogout = () => {
@@ -75,21 +123,24 @@ const Sidebar = () => {
             </button>
 
             <aside
-                className={`fixed top-0 left-0 h-full w-60 bg-[#592644] text-white p-6 shadow-lg flex flex-col transition-transform duration-300 ease-in-out transform z-40 ${
-                    isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-                } lg:translate-x-0 lg:flex lg:flex-col lg:w-60`}
+                ref={sidebarRef}
+                className={`fixed top-0 left-0 h-full bg-[#592644] text-white shadow-lg flex flex-col transition-all duration-300 ease-in-out transform z-40 ${
+                    isSidebarOpen ? "w-60" : "w-20"
+                }`}
             >
-                <div className="mb-10 flex justify-center">
-                    <a href="/Docentes" className="block">
-                        <img
-                            src="/assets/logo%20(1).png"
-                            alt="Logo"
-                            className="w-32 h-auto"
-                        />
-                    </a>
+                <div className="flex flex-col items-center p-4">
+                    <div className={`flex items-center ${!isSidebarOpen && "justify-center w-full"}`}>
+                        <a href="/Docentes" className="block">
+                            <img
+                                src="/assets/logo%20(1).png"
+                                alt="Logo"
+                                className={`transition-all duration-300 ${isSidebarOpen ? "w-32" : "w-12"}`}
+                            />
+                        </a>
+                    </div>
                 </div>
 
-                <nav className="flex flex-col space-y-3 flex-grow">
+                <nav className="flex flex-col space-y-3 flex-grow p-4">
                     {links.map(({ path, label, icon }) => (
                         <div
                             key={path}
@@ -99,20 +150,32 @@ const Sidebar = () => {
                                     ? "bg-white/20 text-white"
                                     : "text-white hover:bg-white/20"
                             }`}
+                            title={!isSidebarOpen ? label : ""}
                         >
-                            <i className={`${icon} text-lg`}></i>
-                            <span className="font-medium">{label}</span>
+                            <i className={`${icon} text-lg ${!isSidebarOpen && "mx-auto"}`}></i>
+                            {isSidebarOpen && <span className="font-medium">{label}</span>}
                         </div>
                     ))}
 
                     <div
                         onClick={handleLogout}
                         className="flex items-center space-x-3 p-3 mt-auto rounded-xl cursor-pointer text-white hover:bg-white/20 transition transform hover:scale-105"
+                        title={!isSidebarOpen ? "Cerrar Sesión" : ""}
                     >
                         <i className="fas fa-sign-out-alt text-lg"></i>
-                        <span className="font-medium">Cerrar Sesión</span>
+                        {isSidebarOpen && <span className="font-medium">Cerrar Sesión</span>}
                     </div>
                 </nav>
+
+                <button
+                    onClick={togglePin}
+                    className={`absolute -right-3 top-1/2 transform -translate-y-1/2 p-2 bg-[#592644] text-white rounded-full shadow-lg hover:bg-[#4a1f38] transition-colors ${
+                        isPinned ? "bg-[#4a1f38]" : ""
+                    }`}
+                    title={isPinned ? "Desfijar sidebar" : "Fijar sidebar"}
+                >
+                    <i className={`fas fa-thumbtack ${isPinned ? "rotate-45" : ""}`}></i>
+                </button>
             </aside>
 
             {mensaje && (

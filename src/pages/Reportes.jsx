@@ -5,6 +5,7 @@ import "jspdf-autotable";
 import Card from "../components/Card.jsx";
 import autoTable from "jspdf-autotable";
 import SkeletonReportes from "../components/SkeletonReportes";
+import { useSidebar } from "../context/SidebarContext";
 
 const API_URL = "https://universidad-la9h.onrender.com";
 
@@ -13,6 +14,7 @@ const Reportes = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [modalInsumo, setModalInsumo] = useState(null);
+    const { isSidebarOpen } = useSidebar();
 
     const fetchData = async () => {
         setLoading(true);
@@ -94,7 +96,7 @@ const Reportes = () => {
     return (
         <div className="flex flex-col lg:flex-row min-h-screen bg-gradient-to-r from-[#F4E1D2] to-[#592644]">
             <Sidebar />
-            <div className="flex-1 p-4 md:p-6 bg-white shadow-xl rounded-xl mt-20 lg:mt-0 lg:ml-60">
+            <div className={`flex-1 p-4 md:p-6 bg-white shadow-xl rounded-xl mt-20 lg:mt-0 transition-all duration-300 ${isSidebarOpen ? 'lg:ml-60' : 'lg:ml-20'}`}>
                 <h2 className="text-xl md:text-2xl font-bold text-black mb-8">Reportes de Insumos</h2>
 
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center sm:space-x-6 space-y-4 sm:space-y-0 mt-6">

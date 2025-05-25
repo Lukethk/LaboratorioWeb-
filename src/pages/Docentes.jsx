@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import Sidebar from "../components/Sidebar.jsx";
 import SearchBar from "../components/SearchBar";
 import SkeletonCard from "../components/SkeletonCard.jsx";
+import { useSidebar } from "../context/SidebarContext";
 
 const API_URL = "https://universidad-la9h.onrender.com";
 
@@ -42,6 +43,7 @@ const SolicitudesUso = () => {
     const [loadingDetails, setLoadingDetails] = useState(false);
     const [devolucionParcial, setDevolucionParcial] = useState({});
     const [isCompleting, setIsCompleting] = useState(false);
+    const { isSidebarOpen } = useSidebar();
 
     // Estados para la animación de cortinas
     const [showCurtains, setShowCurtains] = useState(true);
@@ -269,8 +271,8 @@ Insumos no devueltos: ${data.insumos_no_devueltos.length}`);
                 </>
             )}
 
-            <Sidebar className="hidden md:block" />
-            <main className="flex-1 p-4 md:p-6 md:ml-60 overflow-auto">
+            <Sidebar />
+            <main className={`flex-1 p-4 md:p-6 transition-all duration-300 ${isSidebarOpen ? 'md:ml-60' : 'md:ml-20'}`}>
                 <div className="flex justify-between items-center mb-6">
                     <h1 className="text-2xl font-bold text-black">Gestión de Solicitudes de Docentes</h1>
                 </div>

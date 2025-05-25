@@ -13,6 +13,7 @@ import {
     FaChevronRight
 } from 'react-icons/fa';
 import Sidebar from '../components/Sidebar';
+import { useSidebar } from "../context/SidebarContext";
 
 const API_URL = "https://universidad-la9h.onrender.com";
 
@@ -30,6 +31,7 @@ const MovimientosDeInventario = () => {
         total: 0,
         totalPages: 1
     });
+    const { isSidebarOpen } = useSidebar();
 
     const fetchMovimientos = async (page = 1) => {
         try {
@@ -263,7 +265,7 @@ const MovimientosDeInventario = () => {
         return (
             <div className="flex h-screen bg-gray-50">
                 <Sidebar />
-                <div className="flex flex-col items-center justify-center flex-1">
+                <div className={`flex flex-col items-center justify-center flex-1 transition-all duration-300 ${isSidebarOpen ? 'lg:ml-60' : 'lg:ml-20'}`}>
                     <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#592644]"></div>
                     <p className="mt-4 text-gray-600">Cargando movimientos...</p>
                 </div>
@@ -274,8 +276,7 @@ const MovimientosDeInventario = () => {
     return (
         <div className="flex h-screen bg-gray-50">
             <Sidebar />
-
-            <main className="flex-1 p-4 md:p-6 md:ml-60 overflow-auto">
+            <div className={`flex-1 p-6 overflow-y-auto transition-all duration-300 ${isSidebarOpen ? 'lg:ml-60' : 'lg:ml-20'}`}>
                 <div className="container mx-auto">
                     <h1 className="text-1xl md:text-3xl font-bold text-black mb-6">
                         Movimientos de Inventario
@@ -362,82 +363,51 @@ const MovimientosDeInventario = () => {
                 </div>
 
                 {modalVisible && (
-                    <div className="fixed inset-0 bg-opacity-30 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                        <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[80vh] flex flex-col border-2 border-[#592644]">
-                            <div className="flex justify-between items-center border-b p-4 bg-[#592644] text-white rounded-t-lg">
-                                <h2 className="text-lg font-bold">
-                                    Detalles del Movimiento
-                                </h2>
-                                <button
-                                    onClick={() => setModalVisible(false)}
-                                    className="text-white hover:text-gray-200 transition"
-                                >
-                                    <FaTimes className="text-xl" />
-                                </button>
+                    <div className="fixed inset-0 bg-opacity-40 flex justify-center items-center z-50">
+                        <div className="bg-white rounded-[2rem] w-[95vw] max-w-2xl p-8 relative shadow-2xl">
+                            <div className="absolute top-6 right-6 bg-gray-100 px-4 py-1 rounded-full font-semibold text-base shadow-lg text-[#592644]">
+                                {selectedMovimiento?.tipo_movimiento === 'PRESTAMO' ? 'PRÉSTAMO' : 'DEVOLUCIÓN'}
                             </div>
 
-                            <div className="overflow-y-auto p-4 flex-1">
-                                <div className="mb-4">
-                                    <span className="block text-sm text-gray-600 mb-1">Tipo de Movimiento:</span>
-                                    <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-                                        selectedMovimiento?.tipo_movimiento === 'PRESTAMO'
-                                            ? 'bg-red-100 text-red-800'
-                                            : 'bg-green-100 text-green-800'
-                                    }`}>
-                                        {selectedMovimiento?.tipo_movimiento === 'PRESTAMO' ? 'PRÉSTAMO' : 'DEVOLUCIÓN'}
-                                    </span>
-                                </div>
+                            <div className="text-center mb-6 mt-4">
+                                <h2 className="text-2xl font-bold text-black mb-2 text-[#592644]">
+                                    {selectedMovimiento?.insumo_nombre || 'Insumo no especificado'}
+                                </h2>
+                                <p className="text-sm text-gray-600">ID Solicitud: #{selectedMovimiento?.id_solicitud}</p>
+                            </div>
 
-                                <div className="mb-4">
-                                    <span className="block text-sm text-gray-600 mb-1">Insumo:</span>
-                                    <span className="text-gray-800 font-medium">
-                                        {selectedMovimiento?.insumo_nombre || 'No especificado'}
-                                    </span>
-                                </div>
-
-                                <div className="mb-4">
-                                    <span className="block text-sm text-gray-600 mb-1">Cantidad:</span>
-                                    <span className={`font-bold text-lg ${
+                            <div className="grid grid-cols-2 gap-6 mb-8">
+                                <div className="bg-gray-200 rounded-2xl p-4 text-center shadow-lg">
+                                    <p className="font-bold text-base mb-2 text-[#592644]">CANTIDAD</p>
+                                    <p className={`text-3xl font-bold ${
                                         selectedMovimiento?.tipo_movimiento === 'PRESTAMO'
                                             ? 'text-red-600'
                                             : 'text-green-600'
                                     }`}>
                                         {selectedMovimiento?.tipo_movimiento === 'PRESTAMO' ? '-' : '+'}{selectedMovimiento?.cantidad}
-                                    </span>
+                                    </p>
                                 </div>
-
-                                <div className="mb-4">
-                                    <span className="block text-sm text-gray-600 mb-1">Fecha:</span>
-                                    <span className="text-gray-800">
-                                        {selectedMovimiento && new Date(selectedMovimiento.fecha_entregado).toLocaleString('es-ES', {
+                                <div className="bg-gray-200 rounded-2xl p-4 text-center shadow-lg">
+                                    <p className="font-bold text-base mb-2 text-[#592644]">FECHA</p>
+                                    <p className="text-2xl font-bold text-[#592644]">
+                                        {selectedMovimiento && new Date(selectedMovimiento.fecha_entregado).toLocaleDateString('es-ES', {
                                             day: '2-digit',
                                             month: '2-digit',
-                                            year: 'numeric',
-                                            hour: '2-digit',
-                                            minute: '2-digit'
+                                            year: 'numeric'
                                         })}
-                                    </span>
-                                </div>
-
-                                <div className="mb-4">
-                                    <span className="block text-sm text-gray-600 mb-1">ID Solicitud:</span>
-                                    <span className="text-gray-800 font-mono">
-                                        #{selectedMovimiento?.id_solicitud}
-                                    </span>
-                                </div>
-
-                                <div className="mb-4">
-                                    <span className="block text-sm text-gray-600 mb-1">Responsable:</span>
-                                    <span className="text-gray-800">
-                                        {selectedMovimiento?.responsable || 'Sistema'}
-                                    </span>
+                                    </p>
                                 </div>
                             </div>
 
-                            <div className="border-t p-4 bg-gray-50 rounded-b-lg">
+                            <div className="bg-gray-100 rounded-2xl p-4 mb-6">
+                                <p className="font-bold text-base mb-2 text-[#592644]">RESPONSABLE</p>
+                                <p className="text-lg text-gray-700">{selectedMovimiento?.responsable || 'Sistema'}</p>
+                            </div>
+
+                            <div className="flex justify-center">
                                 <button
-                                    className="w-full bg-[#592644] text-white py-3 rounded-md hover:bg-[#4a1f38] transition font-medium shadow-md"
                                     onClick={() => setModalVisible(false)}
+                                    className="bg-[#592644] text-white py-2 px-6 rounded-lg shadow hover:bg-[#592655] transition duration-300 text-base shadow-lg"
                                 >
                                     Cerrar
                                 </button>
@@ -445,7 +415,7 @@ const MovimientosDeInventario = () => {
                         </div>
                     </div>
                 )}
-            </main>
+            </div>
         </div>
     );
 };

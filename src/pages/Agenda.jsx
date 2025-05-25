@@ -4,6 +4,7 @@ import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'moment/locale/es';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
+import { useSidebar } from "../context/SidebarContext";
 
 moment.locale('es');
 const localizer = momentLocalizer(moment);
@@ -64,6 +65,7 @@ const Agenda = () => {
     const [loadingDetails, setLoadingDetails] = useState(false);
     const [currentDate, setCurrentDate] = useState(new Date());
     const [currentView, setCurrentView] = useState('week');
+    const { isSidebarOpen } = useSidebar();
 
     useEffect(() => {
         const fetchSolicitudes = async () => {
@@ -126,7 +128,7 @@ const Agenda = () => {
     return (
         <div className="flex h-screen bg-gray-50">
             <Sidebar />
-            <div className="flex-1 ml-60 p-8 overflow-y-auto">
+            <div className={`flex-1 p-8 overflow-y-auto transition-all duration-300 ${isSidebarOpen ? 'lg:ml-60' : 'lg:ml-20'}`}>
                 <div className="mb-8">
                     <div className="flex justify-between items-center mb-6">
                         <h1 className="text-3xl font-bold text-[#592644]">Agenda de Laboratorio</h1>

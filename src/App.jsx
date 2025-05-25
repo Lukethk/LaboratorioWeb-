@@ -10,25 +10,28 @@ import Register from "./pages/Register.jsx";
 import DetalleSolicitud from './components/DetalleSolicitud';
 import Agenda from './pages/Agenda';
 import MovimientosdeInventario from "./pages/MovimientosdeInventario";
+import { SidebarProvider } from "./context/SidebarContext";
 
 function App() {
     return (
-        <Router>
-            <Routes>
-                <Route path="/" element={<Login />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/supplies" element={<Supplies />} />
-                <Route path="/reportes" element={<Reportes />} />
-                <Route path="/solicitudes" element={<Solicitudes />} />
-                <Route path="/docentes" element={<Docentes />} />
-                <Route path="/alumnos" element={<Alumnos />} />
-                <Route path="/agenda" element={<Agenda />} />
-                <Route path="/DetalleSolicitud" element={<DetalleSolicitud />} />
-                <Route path="/MovimientosdeInventario" element={<MovimientosdeInventario />} />
-            </Routes>
-        </Router>
+        <SidebarProvider>
+            <Router>
+                <Routes>
+                    <Route path="/" element={<Login />} />
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/register" element={<Register />} />
+                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/supplies" element={<Supplies />} />
+                    <Route path="/reportes" element={<Reportes />} />
+                    <Route path="/solicitudes" element={<Solicitudes />} />
+                    <Route path="/docentes" element={<Docentes />} />
+                    <Route path="/alumnos" element={<Alumnos />} />
+                    <Route path="/agenda" element={<Agenda />} />
+                    <Route path="/DetalleSolicitud" element={<DetalleSolicitud />} />
+                    <Route path="/MovimientosdeInventario" element={<MovimientosdeInventario />} />
+                </Routes>
+            </Router>
+        </SidebarProvider>
     );
 }
 

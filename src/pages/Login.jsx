@@ -128,7 +128,9 @@ const Login = () => {
                         </div>
 
                         {errorMessage && (
-                            <p className="text-red-500 text-sm mt-2">{errorMessage}</p>
+                            <div className="p-3 bg-red-100 border border-red-400 rounded-xl">
+                                <p className="text-red-600 text-sm font-medium">{errorMessage}</p>
+                            </div>
                         )}
 
                         <button

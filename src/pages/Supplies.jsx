@@ -3,6 +3,7 @@ import Sidebar from "../components/Sidebar";
 import SearchBar from "../components/SearchBar";
 import { PencilIcon, TrashIcon, XMarkIcon } from "@heroicons/react/24/solid";
 import SkeletonRow from "../components/SkeletonRow";
+import { useSidebar } from "../context/SidebarContext";
 
 const API_URL = "https://universidad-la9h.onrender.com";
 
@@ -21,6 +22,7 @@ const Supplies = () => {
     const [deleteConfirmId, setDeleteConfirmId] = useState(null);
     const [filaFiltro, setFilaFiltro] = useState("");
     const [columnaFiltro, setColumnaFiltro] = useState("");
+    const { isSidebarOpen } = useSidebar();
 
     const [newInsumo, setNewInsumo] = useState({
         nombre: "",
@@ -190,7 +192,7 @@ const Supplies = () => {
         <div className="flex flex-col md:flex-row h-screen">
             <Sidebar />
 
-            <div className="md:ml-60 p-4 w-full bg-white overflow-x-auto">
+            <div className={`flex-1 p-4 w-full bg-white overflow-x-auto transition-all duration-300 ${isSidebarOpen ? 'md:ml-60' : 'md:ml-20'}`}>
                 <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
                     <h1 className="text-2xl font-bold text-black">Gestión de Insumos</h1>
                     <div className="flex gap-2 items-center">

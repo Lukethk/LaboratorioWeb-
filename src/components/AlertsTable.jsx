@@ -48,11 +48,11 @@ const AlertsTable = () => {
     const getStatusClass = (estado) => {
         switch (estado) {
             case "activa":
-                return "bg-red-600";
+                return "bg-red-600 text-white";
             case "inactiva":
-                return "bg-yellow-600";
+                return "bg-red-400 text-white";
             case "resuelta":
-                return "bg-green-600";
+                return "bg-red-200 text-red-800";
             default:
                 return "bg-gray-200";
         }

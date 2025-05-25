@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
 import Sidebar from "../components/Sidebar.jsx";
+import { useSidebar } from "../context/SidebarContext";
 
 const API_URL = "https://universidad-la9h.onrender.com";
 
 const Alumnos = () => {
     const [alumnos, setAlumnos] = useState([]);
     const [error, setError] = useState(null);
+    const { isSidebarOpen } = useSidebar();
 
     const fetchAlumnos = async () => {
         try {
@@ -25,7 +27,7 @@ const Alumnos = () => {
     return (
         <div className="flex h-screen">
             <Sidebar />
-            <div className="ml-60 p-6 w-full bg-white overflow-auto">
+            <div className={`flex-1 p-6 w-full bg-white overflow-auto transition-all duration-300 ${isSidebarOpen ? 'lg:ml-60' : 'lg:ml-20'}`}>
                 <h1 className="text-2xl font-bold text-black mb-6">Alumnos y Préstamos</h1>
                 {error && <p className="text-red-600">{error}</p>}
 
