@@ -13,27 +13,35 @@ import MovimientosdeInventario from "./pages/MovimientosdeInventario";
 import { SidebarProvider } from "./context/SidebarContext";
 import Navbar from "./components/Navbar";
 
-function App() {
+function AppRoutes() {
     const location = useLocation();
     const hideNavbar = ["/", "/login", "/register"].includes(location.pathname);
     return (
+        <>
+            {!hideNavbar && <Navbar />}
+            <Routes>
+                <Route path="/" element={<Login />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/supplies" element={<Supplies />} />
+                <Route path="/reportes" element={<Reportes />} />
+                <Route path="/solicitudes" element={<Solicitudes />} />
+                <Route path="/docentes" element={<Docentes />} />
+                <Route path="/alumnos" element={<Alumnos />} />
+                <Route path="/agenda" element={<Agenda />} />
+                <Route path="/DetalleSolicitud" element={<DetalleSolicitud />} />
+                <Route path="/MovimientosdeInventario" element={<MovimientosdeInventario />} />
+            </Routes>
+        </>
+    );
+}
+
+function App() {
+    return (
         <SidebarProvider>
             <Router>
-                {!hideNavbar && <Navbar />}
-                <Routes>
-                    <Route path="/" element={<Login />} />
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/register" element={<Register />} />
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/supplies" element={<Supplies />} />
-                    <Route path="/reportes" element={<Reportes />} />
-                    <Route path="/solicitudes" element={<Solicitudes />} />
-                    <Route path="/docentes" element={<Docentes />} />
-                    <Route path="/alumnos" element={<Alumnos />} />
-                    <Route path="/agenda" element={<Agenda />} />
-                    <Route path="/DetalleSolicitud" element={<DetalleSolicitud />} />
-                    <Route path="/MovimientosdeInventario" element={<MovimientosdeInventario />} />
-                </Routes>
+                <AppRoutes />
             </Router>
         </SidebarProvider>
     );
