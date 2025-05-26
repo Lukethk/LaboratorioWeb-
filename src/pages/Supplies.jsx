@@ -61,6 +61,23 @@ const Supplies = () => {
         fetchInsumos();
     }, []);
 
+    useEffect(() => {
+        const handler = () => setModalOpen(true);
+        window.addEventListener('openAddInsumoModal', handler);
+        return () => window.removeEventListener('openAddInsumoModal', handler);
+    }, []);
+
+    useEffect(() => {
+        const handler = () => {
+            const firstInsumo = insumos[0];
+            if (firstInsumo) {
+                setDeleteConfirmId(firstInsumo.id_insumo);
+            }
+        };
+        window.addEventListener('openDeleteInsumoModal', handler);
+        return () => window.removeEventListener('openDeleteInsumoModal', handler);
+    }, [insumos]);
+
     const handleFilter = (insumo) => {
         const stockActual = parseInt(insumo.stock_actual);
         const stockMinimo = parseInt(insumo.stock_minimo);
@@ -334,7 +351,7 @@ const Supplies = () => {
 
                 {modalOpen && (
                     <div className="fixed inset-0 z-50 flex justify-center items-center">
-                        <div className="fixed inset-0 bg-transparent bg-opacity-40" onClick={() => setModalOpen(false)} />
+                        <div className="fixed inset-0 bg-white/30 backdrop-blur-sm" onClick={() => setModalOpen(false)} />
 
                         <div className="relative z-50 bg-white p-6 rounded-xl w-full max-w-md mx-4 max-h-[80vh] overflow-y-auto shadow-lg">
                             <div className="flex justify-between items-center mb-4">
@@ -436,7 +453,8 @@ const Supplies = () => {
 
                 {editModalOpen && editInsumo && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 overflow-y-auto">
-                        <div className="bg-white rounded-xl w-full max-w-md p-6 my-10 mx-4 shadow-lg">
+                        <div className="fixed inset-0 bg-white/30 backdrop-blur-sm" onClick={() => setEditModalOpen(false)} />
+                        <div className="bg-white rounded-xl w-full max-w-md p-6 my-10 mx-4 shadow-lg relative z-50">
                             <div className="flex justify-between items-center mb-4">
                                 <h2 className="text-xl font-bold text-[#592644]">Editar Insumo</h2>
                                 <button onClick={() => setEditModalOpen(false)}>
@@ -485,7 +503,8 @@ const Supplies = () => {
                 )}
 
                 {deleteConfirmId && (
-                    <div className="fixed inset-0 flex justify-center items-center z-50 bg-transparent bg-opacity-50">
+                    <div className="fixed inset-0 flex justify-center items-center z-50">
+                        <div className="fixed inset-0 bg-white/30 backdrop-blur-sm" onClick={() => setDeleteConfirmId(null)} />
                         <div className="bg-white p-6 rounded-xl w-[400px]">
                             <div className="flex justify-between items-center mb-4">
                                 <h2 className="text-xl font-bold text-[#592644]">Confirmar Eliminación</h2>

@@ -11,11 +11,13 @@ import DetalleSolicitud from './components/DetalleSolicitud';
 import Agenda from './pages/Agenda';
 import MovimientosdeInventario from "./pages/MovimientosdeInventario";
 import { SidebarProvider } from "./context/SidebarContext";
+import Navbar from "./components/Navbar";
 
 function App() {
     return (
         <SidebarProvider>
             <Router>
+                <Navbar />
                 <Routes>
                     <Route path="/" element={<Login />} />
                     <Route path="/login" element={<Login />} />

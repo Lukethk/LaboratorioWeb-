@@ -547,45 +547,113 @@ Insumos no devueltos: ${data.insumos_no_devueltos.length}`);
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {loading ? Array.from({ length: 6 }).map((_, idx) => <SkeletonCard key={idx} />)
                         : filtered.map(s => {
-                            const cardColors = {
-                                Aprobada: 'bg-green-100 text-green-900',
-                                Pendiente: 'bg-yellow-100 text-yellow-900',
-                                Completada: 'bg-blue-100 text-blue-900',
-                                Rechazada: 'bg-red-100 text-red-900'
+                            const estadoColors = {
+                                Pendiente: {
+                                    bg: 'bg-yellow-50',
+                                    text: 'text-yellow-800',
+                                    border: 'border-yellow-200',
+                                    badge: 'bg-yellow-100 text-yellow-800 border-yellow-200'
+                                },
+                                Aprobada: {
+                                    bg: 'bg-green-50',
+                                    text: 'text-green-800',
+                                    border: 'border-green-200',
+                                    badge: 'bg-green-100 text-green-800 border-green-200'
+                                },
+                                Rechazada: {
+                                    bg: 'bg-red-50',
+                                    text: 'text-red-800',
+                                    border: 'border-red-200',
+                                    badge: 'bg-red-100 text-red-800 border-red-200'
+                                },
+                                Completada: {
+                                    bg: 'bg-blue-50',
+                                    text: 'text-blue-800',
+                                    border: 'border-blue-200',
+                                    badge: 'bg-blue-100 text-blue-800 border-blue-200'
+                                }
                             };
-                            const colors = cardColors[s.estado] || 'bg-gray-100 text-gray-900';
+                            const colors = estadoColors[s.estado] || estadoColors['Pendiente'];
                             return (
-                                <div key={s.id_solicitud} className={`${colors} rounded-lg shadow p-6`}>
-                                    <h2 className="text-xl font-bold mb-2">#{s.id_solicitud} - {s.docente_nombre}</h2>
-                                    <p><strong>Práctica:</strong> {s.practica_titulo || "Sin práctica"}</p>
-                                    <p><strong>Laboratorio:</strong> {s.laboratorio_nombre}</p>
-                                    <p><strong>Estado:</strong> <span className="px-2 py-1 rounded-full text-xs font-semibold">{s.estado}</span></p>
-                                    <p><strong>Inicio:</strong> {formatDateTime(s.fecha_hora_inicio)}</p>
-                                    <p><strong>Fin:</strong> {formatDateTime(s.fecha_hora_fin)}</p>
-
-                                    <div className="mt-4 flex flex-wrap gap-2 justify-between">
-                                        <button
-                                            className="bg-[#592644] text-white font-medium py-1.5 px-4 rounded-lg hover:bg-[#4a1f38] transition duration-200"
-                                            onClick={() => handleVerDetalles(s)}
-                                        >
-                                            Ver detalles
-                                        </button>
-
-                                        {s.estado === "Pendiente" && (
-                                            <div className="flex gap-2">
-                                                <button className="bg-green-500 text-white py-1 px-4 rounded-lg" onClick={() => handleAprobar(s.id_solicitud)}>Aprobar</button>
-                                                <button className="bg-red-500 text-white py-1 px-4 rounded-lg" onClick={() => handleRechazar(s.id_solicitud)}>Rechazar</button>
+                                <div key={s.id_solicitud} className={`${colors.bg} rounded-xl shadow-sm border ${colors.border} hover:shadow-md transition-all duration-300 transform hover:-translate-y-1`}>
+                                    <div className="p-5">
+                                        <div className="flex justify-between items-start mb-4">
+                                            <div>
+                                                <h3 className="font-semibold text-lg text-gray-800">{s.docente_nombre}</h3>
+                                                <p className="text-sm text-gray-500 mt-1">{s.practica_titulo || "Sin práctica"}</p>
                                             </div>
-                                        )}
-
-                                        {s.estado === "Aprobada" && (
+                                            <span className={`px-3 py-1 rounded-full text-sm font-medium border ${colors.badge}`}>
+                                                {s.estado}
+                                            </span>
+                                        </div>
+                                        <div className="space-y-3 mb-4">
+                                            <div className="flex flex-col space-y-2">
+                                                <div className="flex items-center text-sm text-gray-600">
+                                                    <svg className="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                    </svg>
+                                                    <span className="font-medium">Período del Uso:</span>
+                                                </div>
+                                                <div className="pl-6 space-y-1">
+                                                    <div className="flex items-center text-sm text-gray-600">
+                                                        <span className="w-20 text-gray-500">Desde:</span>
+                                                        <span className="font-medium">{formatDateTime(s.fecha_hora_inicio)}</span>
+                                                    </div>
+                                                    {s.fecha_hora_fin && (
+                                                        <div className="flex items-center text-sm text-gray-600">
+                                                            <span className="w-20 text-gray-500">Hasta:</span>
+                                                            <span className="font-medium">{formatDateTime(s.fecha_hora_fin)}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center text-sm text-gray-600">
+                                                <span className="font-medium">Laboratorio:</span>
+                                                <span className="ml-2">{s.laboratorio_nombre}</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex justify-between items-center pt-4 border-t border-gray-100">
                                             <button
-                                                className="bg-blue-500 text-white py-1 px-4 rounded-lg hover:bg-blue-600"
-                                                onClick={() => handleCompletar(s.id_solicitud)}
+                                                className="text-[#592644] hover:text-[#7a3a5d] transition-colors flex items-center text-sm font-medium"
+                                                onClick={() => handleVerDetalles(s)}
                                             >
-                                                Marcar como Completada
+                                                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                </svg>
+                                                Ver detalles
                                             </button>
-                                        )}
+                                            {s.estado === 'Pendiente' && (
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={() => handleAprobar(s.id_solicitud)}
+                                                        className="px-3 py-1.5 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm font-medium flex items-center"
+                                                    >
+                                                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                                                        </svg>
+                                                        Aprobar
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleRechazar(s.id_solicitud)}
+                                                        className="px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium flex items-center"
+                                                    >
+                                                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                                        </svg>
+                                                        Rechazar
+                                                    </button>
+                                                </div>
+                                            )}
+                                            {s.estado === 'Aprobada' && (
+                                                <button
+                                                    className="bg-blue-500 text-white py-1 px-4 rounded-lg hover:bg-blue-600"
+                                                    onClick={() => handleCompletar(s.id_solicitud)}
+                                                >
+                                                    Marcar como Completada
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             );
@@ -698,8 +766,9 @@ Insumos no devueltos: ${data.insumos_no_devueltos.length}`);
 
                 {/* Modal de Docentes */}
                 {showDocentesModal && (
-                    <div className="fixed inset-0 bg-opacity-40 backdrop-blur-sm flex items-center justify-center z-50">
-                        <div className="bg-white p-6 rounded-3xl w-[95%] max-w-4xl max-h-[90vh] overflow-auto shadow-2xl">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center">
+                        <div className="fixed inset-0 bg-white/30 backdrop-blur-sm" onClick={() => setShowDocentesModal(false)} />
+                        <div className="bg-white p-6 rounded-3xl w-[95%] max-w-4xl max-h-[90vh] overflow-auto shadow-2xl relative z-50">
                             <div className="flex justify-between items-center mb-6">
                                 <h2 className="text-2xl font-bold text-[#592644]">Asignaciones de Laboratorios</h2>
                                 <button 
@@ -776,8 +845,9 @@ Insumos no devueltos: ${data.insumos_no_devueltos.length}`);
 
                 {/* Diálogo de Confirmación */}
                 {showConfirmDialog && (
-                    <div className="fixed inset-0 bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-[60]">
-                        <div className="bg-white p-6 rounded-xl max-w-md w-full mx-4 shadow-2xl">
+                    <div className="fixed inset-0 z-[60] flex items-center justify-center">
+                        <div className="fixed inset-0 bg-white/30 backdrop-blur-sm" onClick={cancelLabChange} />
+                        <div className="bg-white p-6 rounded-xl max-w-md w-full mx-4 shadow-2xl relative z-50">
                             <h3 className="text-xl font-bold text-[#592644] mb-4">Confirmar Cambio</h3>
                             <p className="text-gray-600 mb-6">
                                 ¿Estás seguro que deseas asignar el laboratorio {pendingChange?.labValue} a este docente?
@@ -802,8 +872,9 @@ Insumos no devueltos: ${data.insumos_no_devueltos.length}`);
 
                 {/* Modal de Rechazo */}
                 {showRechazoModal && (
-                    <div className="fixed inset-0 bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-[60]">
-                        <div className="bg-white p-6 rounded-xl max-w-md w-full mx-4 shadow-2xl">
+                    <div className="fixed inset-0 z-[60] flex items-center justify-center">
+                        <div className="fixed inset-0 bg-white/30 backdrop-blur-sm" onClick={cancelarRechazo} />
+                        <div className="bg-white p-6 rounded-xl max-w-md w-full mx-4 shadow-2xl relative z-50">
                             <h3 className="text-xl font-bold text-[#592644] mb-4">Motivo del Rechazo</h3>
                             <div className="mb-4">
                                 <label htmlFor="motivoRechazo" className="block text-sm font-medium text-gray-700 mb-2">

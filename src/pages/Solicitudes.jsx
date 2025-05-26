@@ -308,8 +308,9 @@ const Solicitudes = () => {
                 </div>
 
                 {confirmModalOpen && estadoPendiente && (
-                    <div className="fixed inset-0  bg-opacity-50 flex items-center justify-center z-50">
-                        <div className="bg-white p-6 rounded-lg shadow-xl w-96">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center">
+                        <div className="fixed inset-0 bg-white/30 backdrop-blur-sm" onClick={() => { setConfirmModalOpen(false); setEstadoPendiente(null); }} />
+                        <div className="bg-white p-6 rounded-lg shadow-xl w-96 relative z-50">
                             <h2 className="text-xl font-semibold mb-4">Confirmar cambio de estado</h2>
                             <p className="mb-6">¿Estás seguro que deseas marcar esta solicitud como <strong>{estadoPendiente.nuevoEstado}</strong>?</p>
 
@@ -356,8 +357,9 @@ const Solicitudes = () => {
                 )}
 
                 {showModal && selectedSolicitud && (
-                    <div className="fixed inset-0 margin bg-opacity-50 flex items-center justify-center z-50">
-                        <div className="bg-white p-6 rounded-lg w-full max-w-4xl max-h-[90vh] overflow-auto">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center">
+                        <div className="fixed inset-0 bg-white/30 backdrop-blur-sm" onClick={() => setShowModal(false)} />
+                        <div className="bg-white p-6 rounded-lg w-full max-w-4xl max-h-[90vh] overflow-auto relative z-50">
                             <div className="flex justify-between items-center mb-4">
                                 <h3 className="text-2xl font-semibold">Detalles de la Solicitud</h3>
                                 <button
@@ -442,8 +444,9 @@ const Solicitudes = () => {
                 )}
 
                 {modalOpen && (
-                    <div className="fixed inset-0 flex items-center justify-center bg-[#59264426] z-50">
-                        <div className="bg-white p-6 rounded-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center">
+                        <div className="fixed inset-0 bg-white/30 backdrop-blur-sm" onClick={() => setModalOpen(false)} />
+                        <div className="bg-white p-6 rounded-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto relative z-50">
                             <div className="flex justify-between items-center mb-6">
                                 <h2 className="text-xl font-bold">Nueva Solicitud de Insumos</h2>
                                 <button onClick={() => setModalOpen(false)}>
@@ -561,8 +564,9 @@ const Solicitudes = () => {
                 )}
 
                 {editModalOpen && (
-                    <div className="fixed inset-0 flex items-center justify-center bg-[#59264426] z-50">
-                        <div className="bg-white p-6 rounded-lg shadow-xl w-96">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center">
+                        <div className="fixed inset-0 bg-white/30 backdrop-blur-sm" onClick={() => setEditModalOpen(false)} />
+                        <div className="bg-white p-6 rounded-lg shadow-xl w-96 relative z-50">
                             <div className="flex justify-between items-center mb-4">
                                 <h2 className="text-xl font-bold">Editar Solicitud</h2>
                                 <button onClick={() => setEditModalOpen(false)}>
