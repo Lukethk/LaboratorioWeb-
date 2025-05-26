@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Supplies from "./pages/Supplies.jsx";
@@ -14,10 +14,12 @@ import { SidebarProvider } from "./context/SidebarContext";
 import Navbar from "./components/Navbar";
 
 function App() {
+    const location = useLocation();
+    const hideNavbar = ["/", "/login", "/register"].includes(location.pathname);
     return (
         <SidebarProvider>
             <Router>
-                <Navbar />
+                {!hideNavbar && <Navbar />}
                 <Routes>
                     <Route path="/" element={<Login />} />
                     <Route path="/login" element={<Login />} />
