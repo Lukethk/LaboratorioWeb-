@@ -353,7 +353,7 @@ const Supplies = () => {
                     <div className="fixed inset-0 z-50 flex justify-center items-center">
                         <div className="fixed inset-0 bg-white/30 backdrop-blur-sm" onClick={() => setModalOpen(false)} />
 
-                        <div className="relative z-50 bg-white p-6 rounded-xl w-full max-w-md mx-4 max-h-[80vh] overflow-y-auto shadow-lg">
+                        <div className="relative z-50 bg-white p-6 rounded-xl w-full max-w-md mx-4 max-h-[80vh] overflow-y-auto shadow-lg animate-slideUpBounceIn">
                             <div className="flex justify-between items-center mb-4">
                                 <h2 className="text-xl font-bold text-[#592644]">Agregar Insumo</h2>
                                 <button onClick={() => setModalOpen(false)}>
@@ -454,7 +454,7 @@ const Supplies = () => {
                 {editModalOpen && editInsumo && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 overflow-y-auto">
                         <div className="fixed inset-0 bg-white/30 backdrop-blur-sm" onClick={() => setEditModalOpen(false)} />
-                        <div className="bg-white rounded-xl w-full max-w-md p-6 my-10 mx-4 shadow-lg relative z-50">
+                        <div className="bg-white rounded-xl w-full max-w-md p-6 my-10 mx-4 shadow-lg relative z-50 animate-slideUpBounceIn">
                             <div className="flex justify-between items-center mb-4">
                                 <h2 className="text-xl font-bold text-[#592644]">Editar Insumo</h2>
                                 <button onClick={() => setEditModalOpen(false)}>
@@ -505,7 +505,7 @@ const Supplies = () => {
                 {deleteConfirmId && (
                     <div className="fixed inset-0 flex justify-center items-center z-50">
                         <div className="fixed inset-0 bg-white/30 backdrop-blur-sm" onClick={() => setDeleteConfirmId(null)} />
-                        <div className="bg-white p-6 rounded-xl w-[400px]">
+                        <div className="bg-white p-6 rounded-xl w-[400px] animate-slideUpBounceIn relative z-10">
                             <div className="flex justify-between items-center mb-4">
                                 <h2 className="text-xl font-bold text-[#592644]">Confirmar Eliminación</h2>
                                 <button onClick={() => setDeleteConfirmId(null)}>

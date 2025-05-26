@@ -80,3 +80,40 @@
 .animate-slideRight {
   animation: slideRight 1.2s ease-in-out forwards;
 }
+
+@keyframes fadeZoomIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fadeZoomIn {
+  animation: fadeZoomIn 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideUpBounceIn {
+  0% {
+    opacity: 0;
+    transform: translateY(80px) scale(0.95);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-10px) scale(1.03);
+  }
+  80% {
+    transform: translateY(4px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-slideUpBounceIn {
+  animation: slideUpBounceIn 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}

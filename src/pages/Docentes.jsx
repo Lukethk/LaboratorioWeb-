@@ -661,8 +661,11 @@ Insumos no devueltos: ${data.insumos_no_devueltos.length}`);
                 </div>
 
                 {expandedSolicitud && (
-                    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-                        <div className="bg-white p-6 md:p-10 rounded-3xl w-[95%] max-w-4xl max-h-[90%] overflow-auto border-2 border-[#592644]">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center">
+                        {/* FONDO BLUR */}
+                        <div className="fixed inset-0 bg-white/30 backdrop-blur-sm" onClick={closeModal} />
+                        {/* MODAL NÍTIDO */}
+                        <div className="bg-white p-6 md:p-10 rounded-3xl w-[95%] max-w-4xl max-h-[90%] overflow-auto border-2 border-[#592644] animate-slideUpBounceIn relative z-10">
                             {loadingDetails ? (
                                 <div className="flex justify-center items-center h-64">
                                     <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#592644]"></div>
@@ -767,8 +770,10 @@ Insumos no devueltos: ${data.insumos_no_devueltos.length}`);
                 {/* Modal de Docentes */}
                 {showDocentesModal && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center">
+                        {/* FONDO BLUR */}
                         <div className="fixed inset-0 bg-white/30 backdrop-blur-sm" onClick={() => setShowDocentesModal(false)} />
-                        <div className="bg-white p-6 rounded-3xl w-[95%] max-w-4xl max-h-[90vh] overflow-auto shadow-2xl relative z-50">
+                        {/* MODAL NÍTIDO */}
+                        <div className="bg-white p-6 rounded-3xl w-[95%] max-w-4xl max-h-[90vh] overflow-auto shadow-2xl animate-slideUpBounceIn relative z-10">
                             <div className="flex justify-between items-center mb-6">
                                 <h2 className="text-2xl font-bold text-[#592644]">Asignaciones de Laboratorios</h2>
                                 <button 
@@ -846,8 +851,10 @@ Insumos no devueltos: ${data.insumos_no_devueltos.length}`);
                 {/* Diálogo de Confirmación */}
                 {showConfirmDialog && (
                     <div className="fixed inset-0 z-[60] flex items-center justify-center">
+                        {/* FONDO BLUR */}
                         <div className="fixed inset-0 bg-white/30 backdrop-blur-sm" onClick={cancelLabChange} />
-                        <div className="bg-white p-6 rounded-xl max-w-md w-full mx-4 shadow-2xl relative z-50">
+                        {/* MODAL NÍTIDO */}
+                        <div className="bg-white p-6 rounded-xl max-w-md w-full mx-4 shadow-2xl animate-slideUpBounceIn relative z-10">
                             <h3 className="text-xl font-bold text-[#592644] mb-4">Confirmar Cambio</h3>
                             <p className="text-gray-600 mb-6">
                                 ¿Estás seguro que deseas asignar el laboratorio {pendingChange?.labValue} a este docente?
@@ -873,8 +880,10 @@ Insumos no devueltos: ${data.insumos_no_devueltos.length}`);
                 {/* Modal de Rechazo */}
                 {showRechazoModal && (
                     <div className="fixed inset-0 z-[60] flex items-center justify-center">
+                        {/* FONDO BLUR */}
                         <div className="fixed inset-0 bg-white/30 backdrop-blur-sm" onClick={cancelarRechazo} />
-                        <div className="bg-white p-6 rounded-xl max-w-md w-full mx-4 shadow-2xl relative z-50">
+                        {/* MODAL NÍTIDO */}
+                        <div className="bg-white p-6 rounded-xl max-w-md w-full mx-4 shadow-2xl animate-slideUpBounceIn relative z-10">
                             <h3 className="text-xl font-bold text-[#592644] mb-4">Motivo del Rechazo</h3>
                             <div className="mb-4">
                                 <label htmlFor="motivoRechazo" className="block text-sm font-medium text-gray-700 mb-2">

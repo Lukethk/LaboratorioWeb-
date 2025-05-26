@@ -1,17 +1,19 @@
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
-import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import Supplies from "./pages/Supplies.jsx";
-import Reportes from "./pages/Reportes";
-import Solicitudes from "./pages/Solicitudes.jsx";
-import Docentes from "./pages/Docentes.jsx";
-import Alumnos from "./pages/Alumnos.jsx";
-import Register from "./pages/Register.jsx";
-import DetalleSolicitud from './components/DetalleSolicitud';
-import Agenda from './pages/Agenda';
-import MovimientosdeInventario from "./pages/MovimientosdeInventario";
+import React, { Suspense, lazy } from "react";
 import { SidebarProvider } from "./context/SidebarContext";
 import Navbar from "./components/Navbar";
+
+const Login = lazy(() => import("./pages/Login"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Supplies = lazy(() => import("./pages/Supplies.jsx"));
+const Reportes = lazy(() => import("./pages/Reportes"));
+const Solicitudes = lazy(() => import("./pages/Solicitudes.jsx"));
+const Docentes = lazy(() => import("./pages/Docentes.jsx"));
+const Alumnos = lazy(() => import("./pages/Alumnos.jsx"));
+const Register = lazy(() => import("./pages/Register.jsx"));
+const DetalleSolicitud = lazy(() => import('./components/DetalleSolicitud'));
+const Agenda = lazy(() => import('./pages/Agenda'));
+const MovimientosdeInventario = lazy(() => import("./pages/MovimientosdeInventario"));
 
 function AppRoutes() {
     const location = useLocation();
@@ -19,20 +21,22 @@ function AppRoutes() {
     return (
         <>
             {!hideNavbar && <Navbar />}
-            <Routes>
-                <Route path="/" element={<Login />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/supplies" element={<Supplies />} />
-                <Route path="/reportes" element={<Reportes />} />
-                <Route path="/solicitudes" element={<Solicitudes />} />
-                <Route path="/docentes" element={<Docentes />} />
-                <Route path="/alumnos" element={<Alumnos />} />
-                <Route path="/agenda" element={<Agenda />} />
-                <Route path="/DetalleSolicitud" element={<DetalleSolicitud />} />
-                <Route path="/MovimientosdeInventario" element={<MovimientosdeInventario />} />
-            </Routes>
+            <Suspense fallback={<div className="flex justify-center items-center min-h-screen text-[#592644] text-xl font-bold">Cargando...</div>}>
+                <Routes>
+                    <Route path="/" element={<Login />} />
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/register" element={<Register />} />
+                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/supplies" element={<Supplies />} />
+                    <Route path="/reportes" element={<Reportes />} />
+                    <Route path="/solicitudes" element={<Solicitudes />} />
+                    <Route path="/docentes" element={<Docentes />} />
+                    <Route path="/alumnos" element={<Alumnos />} />
+                    <Route path="/agenda" element={<Agenda />} />
+                    <Route path="/DetalleSolicitud" element={<DetalleSolicitud />} />
+                    <Route path="/MovimientosdeInventario" element={<MovimientosdeInventario />} />
+                </Routes>
+            </Suspense>
         </>
     );
 }
