@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import NotificationDropdown from './NotificationDropdown';
 
 const API_URL = "https://universidad-la9h.onrender.com";
 
@@ -327,7 +328,7 @@ const Navbar = () => {
                 <i className="far fa-calendar text-xl text-gray-500 align-middle"></i>
             </button>
             <FontSizeMenu openMenu={openMenu} setOpenMenu={setOpenMenu} />
-            <NotificationBell openMenu={openMenu} setOpenMenu={setOpenMenu} />
+            <NotificationDropdown />
             <ProfileMenu openMenu={openMenu} setOpenMenu={setOpenMenu} />
         </nav>
     );

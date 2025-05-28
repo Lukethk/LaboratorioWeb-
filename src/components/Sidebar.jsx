@@ -14,14 +14,14 @@ const Sidebar = () => {
     const location = useLocation();
 
     const links = [
-        { path: "/Docentes", label: "Solicitudes", icon: "fas fa-user" },
-        { path: "/Solicitudes", label: "Requerimientos", icon: "fas fa-clipboard-list" },
+        { path: "/docentes", label: "Solicitudes", icon: "fas fa-user" },
+        { path: "/solicitudes", label: "Requerimientos", icon: "fas fa-clipboard-list" },
         { path: "/agenda", label: "Agenda", icon: "fas fa-calendar-alt" },
         { path: "/dashboard", label: "Estadisticas", icon: "fas fa-chart-line" },
         { path: "/supplies", label: "Suministros", icon: "fas fa-boxes" },
         { path: "/reportes", label: "Reportes", icon: "fas fa-file-alt" },
-        { path: "/Alumnos", label: "Alumnos", icon: "fas fa-graduation-cap" },
-        { path: "/MovimientosdeInventario", label: "Movimientos", icon: "fas fa-exchange-alt" },
+        { path: "/alumnos", label: "Alumnos", icon: "fas fa-graduation-cap" },
+        { path: "/movimientos", label: "Movimientos", icon: "fas fa-exchange-alt" },
     ];
 
     useEffect(() => {
@@ -130,7 +130,7 @@ const Sidebar = () => {
             >
                 <div className="flex flex-col items-center p-4">
                     <div className={`flex items-center ${!isSidebarOpen && "justify-center w-full"}`}>
-                        <a href="/Docentes" className="block">
+                        <a href="/docentes" className="block">
                             <img
                                 src="/assets/logo%20(1).png"
                                 alt="Logo"

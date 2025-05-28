@@ -1,11 +1,15 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Sidebar from "../components/Sidebar.jsx";
 import SearchBar from "../components/SearchBar";
 import SkeletonCard from "../components/SkeletonCard.jsx";
 import { useSidebar } from "../context/SidebarContext";
 import moment from "moment";
+import { useNotifications } from '../context/NotificationContext';
+import * as XLSX from 'xlsx';
+import { jsPDF } from 'jspdf';
 
 const API_URL = "https://universidad-la9h.onrender.com";
+const WS_URL = "wss://universidad-la9h.onrender.com/ws";
 
 const summaryCards = [
     { 
@@ -64,32 +68,89 @@ const Alumnos = () => {
     const [loading, setLoading] = useState(true);
     const [loadingDetails, setLoadingDetails] = useState(false);
     const [confirmModal, setConfirmModal] = useState({ show: false, action: null, solicitudId: null });
+    const [loadingAction, setLoadingAction] = useState(null);
     const { isSidebarOpen } = useSidebar();
+    const { addNotification } = useNotifications();
+    const [lastSolicitudesIds, setLastSolicitudesIds] = useState(new Set());
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
+    const [isUpdating, setIsUpdating] = useState(false);
 
     // Estados para la animación de cortinas
     const [showCurtains, setShowCurtains] = useState(true);
     const [animateOpen, setAnimateOpen] = useState(false);
 
-    const fetchSolicitudes = async () => {
+    const fetchSolicitudes = async (showLoading = true) => {
         try {
-            setLoading(true);
+            if (showLoading) setLoading(true);
             const res = await fetch(`${API_URL}/estudiantes/solicitudes`);
             if (!res.ok) {
                 throw new Error(`Error al obtener las solicitudes: ${res.status}`);
             }
             const data = await res.json();
-            setSolicitudes(data);
+            
+            console.log('Datos recibidos:', data);
+            console.log('IDs actuales:', data.map(s => s.id_solicitud));
+            console.log('IDs anteriores:', Array.from(lastSolicitudesIds));
+            
+            // Solo verificar nuevas solicitudes si no es la carga inicial
+            if (!isInitialLoad) {
+                const currentIds = new Set(data.map(s => s.id_solicitud));
+                const newSolicitudes = data.filter(s => !lastSolicitudesIds.has(s.id_solicitud));
+                
+                console.log('Nuevas solicitudes encontradas:', newSolicitudes);
+                
+                if (newSolicitudes.length > 0) {
+                    console.log('Enviando notificación para nuevas solicitudes');
+                    // Actualizar el estado con una animación suave
+                    setIsUpdating(true);
+                    
+                    // Agregar las nuevas solicitudes al principio
+                    setSolicitudes(prev => {
+                        const updatedSolicitudes = [...newSolicitudes, ...prev];
+                        return updatedSolicitudes.sort((a, b) => 
+                            new Date(b.fecha_hora_inicio) - new Date(a.fecha_hora_inicio)
+                        );
+                    });
+
+                    // Mostrar notificación para cada nueva solicitud
+                    newSolicitudes.forEach(solicitud => {
+                        console.log('Enviando notificación para:', solicitud);
+                        addNotification({
+                            type: 'solicitud_estudiante',
+                            title: 'Nueva Solicitud de Estudiante',
+                            message: `Nueva solicitud de ${solicitud.estudiante_nombre} para ${solicitud.materia_nombre}`,
+                            timestamp: new Date()
+                        });
+                    });
+
+                    // Quitar la animación después de un momento
+                    setTimeout(() => setIsUpdating(false), 1000);
+                }
+            } else {
+                console.log('Carga inicial, estableciendo solicitudes');
+                setSolicitudes(data);
+            }
+            
+            setLastSolicitudesIds(new Set(data.map(s => s.id_solicitud)));
+            setIsInitialLoad(false);
             setError(null);
         } catch (err) {
             console.error('Error en fetchSolicitudes:', err);
             setError(err.message);
         } finally {
-            setLoading(false);
+            if (showLoading) setLoading(false);
         }
     };
 
     useEffect(() => {
+        console.log('Iniciando componente Alumnos');
         fetchSolicitudes();
+
+        // Configurar intervalo para verificar nuevas solicitudes cada 10 segundos
+        const intervalId = setInterval(() => {
+            console.log('Verificando nuevas solicitudes...');
+            fetchSolicitudes(false);
+        }, 10000);
 
         // Lógica de animación de cortinas
         const hasEnteredBefore = sessionStorage.getItem("alumnosEntered");
@@ -104,14 +165,23 @@ const Alumnos = () => {
                 sessionStorage.setItem("alumnosEntered", "true");
             }, 3000);
 
-            return () => clearTimeout(timeout);
+            return () => {
+                clearTimeout(timeout);
+                clearInterval(intervalId);
+            };
         } else {
             setShowCurtains(false);
         }
+
+        return () => {
+            console.log('Limpiando intervalo');
+            clearInterval(intervalId);
+        };
     }, []);
 
     const handleEstadoSolicitud = async (id, nuevoEstado) => {
         try {
+            setLoadingAction(id);
             const res = await fetch(`${API_URL}/estudiantes/solicitudes/${id}`, {
                 method: 'PATCH',
                 headers: {
@@ -121,15 +191,38 @@ const Alumnos = () => {
             });
 
             if (!res.ok) {
-                throw new Error(`Error al ${nuevoEstado === 'Aprobada' ? 'aprobar' : 'rechazar'} la solicitud: ${res.status}`);
+                let errorMessage;
+                try {
+                    const errorData = await res.json();
+                    errorMessage = errorData.message;
+                } catch (e) {
+                    errorMessage = `Error al ${nuevoEstado === 'Aprobada' ? 'aprobar' : nuevoEstado === 'Rechazada' ? 'rechazar' : 'completar'} la solicitud: ${res.status}`;
+                }
+                throw new Error(errorMessage);
             }
+
+            let responseData;
+            try {
+                responseData = await res.json();
+            } catch (e) {
+                responseData = { message: 'Operación exitosa' };
+            }
+            
+            // Agregar notificación
+            addNotification({
+                type: 'solicitud_estudiante',
+                title: 'Solicitud Actualizada',
+                message: `La solicitud ha sido ${nuevoEstado.toLowerCase()} exitosamente`
+            });
             
             await fetchSolicitudes();
             setSelectedSolicitud(null);
             setError(null);
         } catch (err) {
             console.error('Error en handleEstadoSolicitud:', err);
-            setError(err.message);
+            setError(err.message || 'Error al procesar la solicitud. Por favor, intente nuevamente.');
+        } finally {
+            setLoadingAction(null);
         }
     };
 
@@ -203,6 +296,76 @@ const Alumnos = () => {
         }
     };
 
+    const handleImprimirFormulario = async (solicitud) => {
+        try {
+            // Crear una tabla HTML estructurada
+            const tableHtml = `
+                <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                    <tr>
+                        <th style="border: 1px solid #ddd; padding: 8px; text-align: left; background-color: #f8f9fa;">Campo</th>
+                        <th style="border: 1px solid #ddd; padding: 8px; text-align: left; background-color: #f8f9fa;">Valor</th>
+                    </tr>
+                    <tr>
+                        <td style="border: 1px solid #ddd; padding: 8px;">Nombre del Estudiante</td>
+                        <td style="border: 1px solid #ddd; padding: 8px;">${solicitud.estudiante_nombre}</td>
+                    </tr>
+                    <tr>
+                        <td style="border: 1px solid #ddd; padding: 8px;">Materia</td>
+                        <td style="border: 1px solid #ddd; padding: 8px;">${solicitud.materia_nombre}</td>
+                    </tr>
+                    <tr>
+                        <td style="border: 1px solid #ddd; padding: 8px;">Estado</td>
+                        <td style="border: 1px solid #ddd; padding: 8px;">${solicitud.estado}</td>
+                    </tr>
+                    <tr>
+                        <td style="border: 1px solid #ddd; padding: 8px;">Fecha de Inicio</td>
+                        <td style="border: 1px solid #ddd; padding: 8px;">${moment(solicitud.fecha_hora_inicio).format('DD/MM/YYYY HH:mm')}</td>
+                    </tr>
+                    <tr>
+                        <td style="border: 1px solid #ddd; padding: 8px;">Fecha de Fin</td>
+                        <td style="border: 1px solid #ddd; padding: 8px;">${moment(solicitud.fecha_hora_fin).format('DD/MM/YYYY HH:mm')}</td>
+                    </tr>
+                    ${solicitud.insumos && solicitud.insumos.length > 0 ? `
+                        <tr>
+                            <td colspan="2" style="border: 1px solid #ddd; padding: 8px; background-color: #f8f9fa; font-weight: bold;">Insumos Requeridos</td>
+                        </tr>
+                        ${solicitud.insumos.map(insumo => `
+                            <tr>
+                                <td style="border: 1px solid #ddd; padding: 8px;">${insumo.insumo_nombre}</td>
+                                <td style="border: 1px solid #ddd; padding: 8px;">${insumo.cantidad_solicitada} ${insumo.unidad_medida}</td>
+                            </tr>
+                        `).join('')}
+                    ` : ''}
+                </table>
+            `;
+
+            // Crear un PDF
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            
+            // Agregar el contenido al PDF
+            pdf.html(tableHtml, {
+                callback: function(pdf) {
+                    // Abrir el PDF en una nueva ventana
+                    window.open(pdf.output('bloburl'), '_blank');
+                },
+                x: 10,
+                y: 10,
+                html2canvas: {
+                    scale: 0.7
+                }
+            });
+
+        } catch (error) {
+            console.error('Error al generar el PDF:', error);
+            // Mostrar notificación de error
+            addNotification({
+                type: 'error',
+                title: 'Error al generar el formulario',
+                message: 'Hubo un error al generar el formulario. Por favor, intente nuevamente.'
+            });
+        }
+    };
+
     const filteredSolicitudes = solicitudes
         .filter(s => 
             s.estudiante_nombre.toLowerCase().includes(query.toLowerCase()) ||
@@ -233,6 +396,27 @@ const Alumnos = () => {
         }
     };
 
+    // Componente para el botón de acción con animación
+    const ActionButton = ({ solicitud, action, label, icon, bgColor, hoverColor }) => (
+        <button
+            onClick={() => handleConfirmAction(solicitud.id_solicitud, action)}
+            disabled={loadingAction === solicitud.id_solicitud}
+            className={`px-3 py-1.5 ${bgColor} text-white rounded-lg ${hoverColor} transition-colors text-sm font-medium flex items-center min-w-[100px] justify-center`}
+        >
+            {loadingAction === solicitud.id_solicitud ? (
+                <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+            ) : (
+                <>
+                    {icon}
+                    {label}
+                </>
+            )}
+        </button>
+    );
+
     return (
         <div className="flex h-screen bg-gray-50">
             <Sidebar />
@@ -240,6 +424,15 @@ const Alumnos = () => {
                 <div className="max-w-7xl mx-auto">
                     <div className="flex justify-between items-center mb-8">
                         <h1 className="text-3xl font-bold text-gray-800">Préstamos de Estudiantes</h1>
+                        {isUpdating && (
+                            <div className="flex items-center text-[#592644]">
+                                <svg className="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span className="text-sm">Actualizando...</span>
+                            </div>
+                        )}
                     </div>
 
                     {error && (
@@ -366,25 +559,56 @@ const Alumnos = () => {
                                                     </button>
                                                     {solicitud.estado === 'Pendiente' && (
                                                         <div className="flex gap-2">
-                                                            <button
-                                                                onClick={() => handleConfirmAction(solicitud.id_solicitud, 'Aprobada')}
-                                                                className="px-3 py-1.5 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm font-medium flex items-center"
-                                                            >
-                                                                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                                                                </svg>
-                                                                Aprobar
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleConfirmAction(solicitud.id_solicitud, 'Rechazada')}
-                                                                className="px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium flex items-center"
-                                                            >
-                                                                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                                                                Rechazar
-                                                            </button>
+                                                            <ActionButton
+                                                                solicitud={solicitud}
+                                                                action="Aprobada"
+                                                                label="Aprobar"
+                                                                icon={
+                                                                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                                                                    </svg>
+                                                                }
+                                                                bgColor="bg-green-500"
+                                                                hoverColor="hover:bg-green-600"
+                                                            />
+                                                            <ActionButton
+                                                                solicitud={solicitud}
+                                                                action="Rechazada"
+                                                                label="Rechazar"
+                                                                icon={
+                                                                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                                                    </svg>
+                                                                }
+                                                                bgColor="bg-red-500"
+                                                                hoverColor="hover:bg-red-600"
+                                                            />
                                                         </div>
+                                                    )}
+                                                    {solicitud.estado === 'Aprobada' && (
+                                                        <ActionButton
+                                                            solicitud={solicitud}
+                                                            action="Completada"
+                                                            label="Marcar como Completada"
+                                                            icon={
+                                                                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                                </svg>
+                                                            }
+                                                            bgColor="bg-blue-500"
+                                                            hoverColor="hover:bg-blue-600"
+                                                        />
+                                                    )}
+                                                    {solicitud.estado === 'Completada' && (
+                                                        <button
+                                                            onClick={() => handleImprimirFormulario(solicitud)}
+                                                            className="px-3 py-1.5 bg-[#592644] text-white rounded-lg hover:bg-[#7a3a5d] transition-colors text-sm font-medium flex items-center"
+                                                        >
+                                                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                                                            </svg>
+                                                            Imprimir Formulario
+                                                        </button>
                                                     )}
                                                 </div>
                                             </div>
@@ -483,27 +707,16 @@ const Alumnos = () => {
                                         >
                                             Cerrar
                                         </button>
-                                        {selectedSolicitud.estado === 'Pendiente' && (
-                                            <>
-                                                <button
-                                                    onClick={() => handleConfirmAction(selectedSolicitud.id_solicitud, 'Aprobada')}
-                                                    className="bg-green-500 text-white py-2 px-6 rounded-lg shadow-md hover:bg-green-600 transition-colors flex items-center"
-                                                >
-                                                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                                                    </svg>
-                                                    Aprobar Solicitud
-                                                </button>
-                                                <button
-                                                    onClick={() => handleConfirmAction(selectedSolicitud.id_solicitud, 'Rechazada')}
-                                                    className="bg-red-500 text-white py-2 px-6 rounded-lg shadow-md hover:bg-red-600 transition-colors flex items-center"
-                                                >
-                                                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                                                    </svg>
-                                                    Rechazar Solicitud
-                                                </button>
-                                            </>
+                                        {selectedSolicitud.estado === 'Completada' && (
+                                            <button
+                                                onClick={() => handleImprimirFormulario(selectedSolicitud)}
+                                                className="bg-[#592644] text-white py-2 px-6 rounded-lg shadow-md hover:bg-[#7a3a5d] transition-colors flex items-center"
+                                            >
+                                                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                                                </svg>
+                                                Imprimir Formulario
+                                            </button>
                                         )}
                                     </div>
                                 </>
@@ -518,11 +731,16 @@ const Alumnos = () => {
                         <div className="fixed inset-0 bg-white/30 backdrop-blur-sm" onClick={handleCancel} />
                         <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4 relative z-50">
                             <h3 className="text-xl font-bold text-gray-800 mb-4">
-                                {confirmModal.action === 'Aprobada' ? 'Confirmar Aprobación' : 'Confirmar Rechazo'}
+                                {confirmModal.action === 'Aprobada' ? 'Confirmar Aprobación' : 
+                                 confirmModal.action === 'Rechazada' ? 'Confirmar Rechazo' :
+                                 'Confirmar Completar Solicitud'}
                             </h3>
                             <p className="text-gray-600 mb-6">
-                                ¿Estás seguro que deseas {confirmModal.action === 'Aprobada' ? 'aprobar' : 'rechazar'} esta solicitud?
-                                Esta acción no se puede deshacer.
+                                {confirmModal.action === 'Aprobada' ? 
+                                    '¿Estás seguro que deseas aprobar esta solicitud? Esta acción no se puede deshacer.' :
+                                 confirmModal.action === 'Rechazada' ?
+                                    '¿Estás seguro que deseas rechazar esta solicitud? Esta acción no se puede deshacer.' :
+                                    '¿Estás seguro que deseas marcar esta solicitud como completada? Esta acción no se puede deshacer.'}
                             </p>
                             <div className="flex justify-end gap-4">
                                 <button
@@ -536,10 +754,14 @@ const Alumnos = () => {
                                     className={`px-4 py-2 rounded-lg text-white ${
                                         confirmModal.action === 'Aprobada' 
                                             ? 'bg-green-500 hover:bg-green-600' 
-                                            : 'bg-red-500 hover:bg-red-600'
+                                            : confirmModal.action === 'Rechazada'
+                                            ? 'bg-red-500 hover:bg-red-600'
+                                            : 'bg-blue-500 hover:bg-blue-600'
                                     } transition-colors`}
                                 >
-                                    {confirmModal.action === 'Aprobada' ? 'Aprobar' : 'Rechazar'}
+                                    {confirmModal.action === 'Aprobada' ? 'Aprobar' : 
+                                     confirmModal.action === 'Rechazada' ? 'Rechazar' :
+                                     'Completar'}
                                 </button>
                             </div>
                         </div>

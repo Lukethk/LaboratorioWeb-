@@ -12,12 +12,12 @@ const Login = () => {
     useEffect(() => {
         const isAuthenticated = sessionStorage.getItem("auth") === "true";
         if (isAuthenticated) {
-            navigate("/Docentes");
+            navigate("/docentes");
         }
     }, [navigate]);
 
     const handleLogin = async (e) => {
-        e.preventDefault(); // Prevenir el comportamiento por defecto del formulario
+        e.preventDefault();
         try {
             const response = await fetch("https://universidad-la9h.onrender.com/auth/encargado-login", {
                 method: "POST",
@@ -34,9 +34,11 @@ const Login = () => {
                 return;
             }
 
-            setShowCurtains(true);
+            // Guardar el token y la autenticación
             sessionStorage.setItem("auth", "true");
-
+            sessionStorage.setItem("token", data.token);
+            
+            setShowCurtains(true);
             setTimeout(() => {
                 setCurtainsClosed(true);
             }, 100);
@@ -50,7 +52,7 @@ const Login = () => {
     useEffect(() => {
         if (curtainsClosed) {
             const timeout = setTimeout(() => {
-                navigate("/Docentes");
+                navigate("/docentes", { replace: true });
             }, 2000);
 
             return () => clearTimeout(timeout);
