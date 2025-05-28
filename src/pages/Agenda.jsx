@@ -182,11 +182,27 @@ const Agenda = () => {
                             week: { header: CustomDateHeader },
                             day: { header: CustomDateHeader }
                         }}
-                        eventPropGetter={() => ({ style: { backgroundColor: '#592644', color: 'white', borderRadius: '6px', border: 'none' } })}
+                        eventPropGetter={(event) => ({
+                            style: {
+                                backgroundColor: '#592644',
+                                color: 'white',
+                                borderRadius: '6px',
+                                border: 'none',
+                                opacity: 0.9,
+                                height: 'auto',
+                                minHeight: '25px',
+                                padding: '2px 4px',
+                                fontSize: '0.9em',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap'
+                            }
+                        })}
                         date={currentDate}
                         onNavigate={date => setCurrentDate(date)}
                         view={currentView}
                         onView={view => setCurrentView(view)}
+                        dayLayoutAlgorithm="no-overlap"
                     />
                 </div>
                 {showModal && selectedEvent && (

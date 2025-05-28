@@ -3,6 +3,7 @@ import Sidebar from "../components/Sidebar.jsx";
 import SearchBar from "../components/SearchBar";
 import SkeletonCard from "../components/SkeletonCard.jsx";
 import { useSidebar } from "../context/SidebarContext";
+import moment from "moment";
 
 const API_URL = "https://universidad-la9h.onrender.com";
 
@@ -434,12 +435,47 @@ const Alumnos = () => {
                                         )}
                                     </div>
 
-                                    <div>
-                                        <h3 className="text-2xl font-bold mb-4 text-start text-[#592644]">
-                                            Insumos Solicitados
-                                        </h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                                        <div>
+                                            <h4 className="font-bold mb-2 text-[#592644]">Información General</h4>
+                                            <div className="bg-gray-100 p-4 rounded-2xl space-y-2">
+                                                <p><span className="font-semibold">Docente:</span> {selectedSolicitud.docente_nombre}</p>
+                                                <p><span className="font-semibold">Práctica:</span> {selectedSolicitud.practica_titulo}</p>
+                                                <p><span className="font-semibold">Laboratorio:</span> {selectedSolicitud.laboratorio_nombre}</p>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <h4 className="font-bold mb-2 text-[#592644]">Horario</h4>
+                                            <div className="bg-gray-100 p-4 rounded-2xl space-y-2">
+                                                <p><span className="font-semibold">Inicio:</span> {moment(selectedSolicitud.fecha_hora_inicio).format('DD/MM/YYYY HH:mm')}</p>
+                                                <p><span className="font-semibold">Fin:</span> {moment(selectedSolicitud.fecha_hora_fin).format('DD/MM/YYYY HH:mm')}</p>
+                                            </div>
+                                        </div>
                                     </div>
-
+                                    {selectedSolicitud.insumos && selectedSolicitud.insumos.length > 0 && (
+                                        <div className="mt-8">
+                                            <h4 className="font-bold mb-2 text-[#592644]">Insumos Requeridos</h4>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                {selectedSolicitud.insumos.map((insumo, index) => (
+                                                    <div key={index} className="bg-gray-100 p-4 rounded-2xl">
+                                                        <p className="font-semibold mb-2">{insumo.insumo_nombre}</p>
+                                                        <div className="grid grid-cols-2 gap-2 text-sm">
+                                                            <p><span className="text-gray-600">Cantidad:</span> {insumo.cantidad_solicitada}</p>
+                                                            <p><span className="text-gray-600">Unidad:</span> {insumo.unidad_medida}</p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                    {selectedSolicitud.observaciones && (
+                                        <div className="mt-8">
+                                            <h4 className="font-bold mb-2 text-[#592644]">Observación:</h4>
+                                            <div className="bg-gray-100 p-4 rounded-2xl text-gray-700">
+                                                {selectedSolicitud.observaciones}
+                                            </div>
+                                        </div>
+                                    )}
                                     <div className="mt-8 flex justify-center gap-4">
                                         <button
                                             className="bg-gray-500 text-white py-2 px-6 rounded-lg shadow-md hover:bg-gray-600 transition-colors"

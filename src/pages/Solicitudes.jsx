@@ -122,6 +122,15 @@ const Solicitudes = () => {
         });
     };
 
+    const handleCantidadChange = (idx, cantidad) => {
+        setItems((curr) => {
+            const next = [...curr];
+            next[idx].cantidad = parseInt(cantidad) || 0;
+            next[idx].valorTotal = next[idx].cantidad * next[idx].precio;
+            return next;
+        });
+    };
+
     const handleCreatePDF = async (e) => {
         e.preventDefault();
 
@@ -490,7 +499,33 @@ const Solicitudes = () => {
                                             {items.map((it, idx) => (
                                                 <tr key={it.id} className="hover:bg-gray-50">
                                                     <td className="px-2 py-1 border">{it.nombre}</td>
-                                                    <td className="px-2 py-1 border text-center">{it.cantidad}</td>
+                                                    <td className="px-2 py-1 border text-center">
+                                                        <div className="flex items-center justify-center space-x-2">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleCantidadChange(idx, it.cantidad - 1)}
+                                                                className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
+                                                                disabled={it.cantidad <= 0}
+                                                            >
+                                                                -
+                                                            </button>
+                                                            <input
+                                                                type="number"
+                                                                min="0"
+                                                                className="w-16 border p-1 rounded text-center"
+                                                                value={it.cantidad}
+                                                                onChange={(e) => handleCantidadChange(idx, e.target.value)}
+                                                                required
+                                                            />
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleCantidadChange(idx, it.cantidad + 1)}
+                                                                className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
+                                                            >
+                                                                +
+                                                            </button>
+                                                        </div>
+                                                    </td>
                                                     <td className="px-2 py-1 border">
                                                         <input
                                                             type="number"

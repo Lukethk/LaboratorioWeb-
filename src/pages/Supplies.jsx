@@ -22,6 +22,9 @@ const Supplies = () => {
     const [deleteConfirmId, setDeleteConfirmId] = useState(null);
     const [filaFiltro, setFilaFiltro] = useState("");
     const [columnaFiltro, setColumnaFiltro] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
+    const [isEditLoading, setIsEditLoading] = useState(false);
+    const [isDeleteLoading, setIsDeleteLoading] = useState(false);
     const { isSidebarOpen } = useSidebar();
 
     const [newInsumo, setNewInsumo] = useState({
@@ -108,6 +111,7 @@ const Supplies = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setIsLoading(true);
         try {
             const res = await fetch(`${API_URL}/Insumos`, {
                 method: "POST",
@@ -131,11 +135,14 @@ const Supplies = () => {
             await fetchInsumos();
         } catch (error) {
             setError(error.message);
+        } finally {
+            setIsLoading(false);
         }
     };
 
     const handleUpdate = async (e) => {
         e.preventDefault();
+        setIsEditLoading(true);
         try {
             const payload = {
                 nombre: editInsumo.nombre,
@@ -165,10 +172,13 @@ const Supplies = () => {
         } catch (error) {
             setError(error.message);
             showMensaje(error.message);
+        } finally {
+            setIsEditLoading(false);
         }
     };
 
     const handleDelete = async (id) => {
+        setIsDeleteLoading(true);
         try {
             const res = await fetch(`${API_URL}/Insumos/${id}`, {
                 method: "DELETE",
@@ -185,6 +195,8 @@ const Supplies = () => {
         } catch (error) {
             setError(error.message);
             showMensaje(error.message);
+        } finally {
+            setIsDeleteLoading(false);
         }
     };
 
@@ -363,16 +375,16 @@ const Supplies = () => {
 
                             <form onSubmit={handleSubmit} className="space-y-4">
                                 {[
-                                    { name: "nombre", label: "Nombre", type: "text" },
-                                    { name: "descripcion", label: "Descripción", type: "text" },
-                                    { name: "ubicacion", label: "Ubicación", type: "text" },
-                                ].map(({ name, label, type }) => (
+                                    { name: "nombre", label: "Nombre", type: "text", required: true },
+                                    { name: "descripcion", label: "Descripción", type: "text", required: false },
+                                    { name: "ubicacion", label: "Ubicación", type: "text", required: true },
+                                ].map(({ name, label, type, required }) => (
                                     <div key={name} className="flex flex-col">
                                         <label className="text-sm font-medium text-gray-700 mb-1">{label}</label>
                                         <input
                                             type={type}
                                             name={name}
-                                            required
+                                            required={required}
                                             value={newInsumo[name]}
                                             onChange={(e) => setNewInsumo({ ...newInsumo, [name]: e.target.value })}
                                             className="w-full border p-3 rounded-md border-gray-300 focus:ring-2 focus:ring-[#592644]"
@@ -442,9 +454,20 @@ const Supplies = () => {
 
                                 <button
                                     type="submit"
-                                    className="w-full bg-[#592644] text-white py-3 rounded-md font-semibold hover:bg-[#4b1f3d]"
+                                    disabled={isLoading}
+                                    className="w-full bg-[#592644] text-white py-3 rounded-md font-semibold hover:bg-[#4b1f3d] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                                 >
-                                    Guardar
+                                    {isLoading ? (
+                                        <>
+                                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            Creando...
+                                        </>
+                                    ) : (
+                                        'Guardar'
+                                    )}
                                 </button>
                             </form>
                         </div>
@@ -466,8 +489,70 @@ const Supplies = () => {
                                     { name: "nombre", label: "Nombre", type: "text" },
                                     { name: "descripcion", label: "Descripción", type: "text" },
                                     { name: "ubicacion", label: "Ubicación", type: "text" },
-                                    { name: "tipo", label: "Tipo", type: "text" },
-                                    { name: "unidad_medida", label: "Unidad de medida", type: "text" },
+                                ].map(({ name, label, type }) => (
+                                    <div key={name} className="flex flex-col">
+                                        <label htmlFor={name} className="mb-1 font-medium text-gray-700">
+                                            {label}
+                                        </label>
+                                        <input
+                                            id={name}
+                                            type={type}
+                                            name={name}
+                                            value={editInsumo[name] || ""}
+                                            onChange={(e) =>
+                                                setEditInsumo({
+                                                    ...editInsumo,
+                                                    [name]: e.target.value,
+                                                })
+                                            }
+                                            className="w-full border p-3 rounded-md border-gray-300 focus:ring-2 focus:ring-[#592644]"
+                                        />
+                                    </div>
+                                ))}
+
+                                <div className="flex flex-col">
+                                    <label className="text-sm font-medium text-gray-700 mb-1">Tipo</label>
+                                    <select
+                                        name="tipo"
+                                        required
+                                        value={editInsumo.tipo}
+                                        onChange={(e) => setEditInsumo({ ...editInsumo, tipo: e.target.value })}
+                                        className="w-full border p-3 rounded-md border-gray-300 focus:ring-2 focus:ring-[#592644]"
+                                    >
+                                        <option value="">Seleccionar tipo</option>
+                                        <option value="Activo">Activo</option>
+                                        <option value="Consumible">Consumible</option>
+                                        <option value="Herramienta">Herramienta</option>
+                                        <option value="Insumo">Insumo</option>
+                                    </select>
+                                </div>
+
+                                <div className="flex flex-col">
+                                    <label className="text-sm font-medium text-gray-700 mb-1">Unidad de Medida</label>
+                                    <select
+                                        value={editInsumo.unidad_medida}
+                                        onChange={(e) => setEditInsumo({ ...editInsumo, unidad_medida: e.target.value })}
+                                        className="w-full border p-3 rounded-md border-gray-300 focus:ring-2 focus:ring-[#592644]"
+                                        required
+                                    >
+                                        <option value="">Seleccionar unidad</option>
+                                        <option value="Pieza">Pieza</option>
+                                        <option value="Kit">Kit</option>
+                                        <option value="Otro">Otro</option>
+                                    </select>
+
+                                    {editInsumo.unidad_medida === "Otro" && (
+                                        <input
+                                            type="text"
+                                            placeholder="Especificar unidad"
+                                            className="mt-2 border p-3 rounded-md border-gray-300 focus:ring-2 focus:ring-[#592644]"
+                                            onChange={(e) => setEditInsumo({ ...editInsumo, unidad_medida: e.target.value })}
+                                            required
+                                        />
+                                    )}
+                                </div>
+
+                                {[
                                     { name: "stock_actual", label: "Disponibilidad actual", type: "number" },
                                     { name: "stock_minimo", label: "Disponibilidad mínima", type: "number" },
                                     { name: "stock_maximo", label: "Disponibilidad máxima", type: "number" },
@@ -491,11 +576,23 @@ const Supplies = () => {
                                         />
                                     </div>
                                 ))}
+
                                 <button
                                     type="submit"
-                                    className="w-full bg-[#592644] text-white py-3 rounded-md font-semibold hover:bg-[#4b1f3d]"
+                                    disabled={isEditLoading}
+                                    className="w-full bg-[#592644] text-white py-3 rounded-md font-semibold hover:bg-[#4b1f3d] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                                 >
-                                    Actualizar
+                                    {isEditLoading ? (
+                                        <>
+                                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            Actualizando...
+                                        </>
+                                    ) : (
+                                        'Actualizar'
+                                    )}
                                 </button>
                             </form>
                         </div>
@@ -522,9 +619,20 @@ const Supplies = () => {
                                 </button>
                                 <button
                                     onClick={() => handleDelete(deleteConfirmId)}
-                                    className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
+                                    disabled={isDeleteLoading}
+                                    className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                                 >
-                                    Eliminar
+                                    {isDeleteLoading ? (
+                                        <>
+                                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            Eliminando...
+                                        </>
+                                    ) : (
+                                        'Eliminar'
+                                    )}
                                 </button>
                             </div>
                         </div>

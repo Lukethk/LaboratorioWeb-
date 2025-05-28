@@ -114,9 +114,15 @@ const ProfileMenu = ({ openMenu, setOpenMenu }) => {
         }
     }, [open]);
 
+    
     const handleLogout = () => {
-        localStorage.clear();
-        navigate('/login');
+        
+
+        
+            sessionStorage.removeItem("auth");
+            sessionStorage.removeItem("dashboardEntered");
+            navigate("/login");
+        
     };
 
     return (
