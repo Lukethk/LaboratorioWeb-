@@ -9,6 +9,7 @@ const API_URL = "https://universidad-la9h.onrender.com";
 
 const Supplies = () => {
     const [insumos, setInsumos] = useState([]);
+    const [insumosEnMantenimiento, setInsumosEnMantenimiento] = useState([]);
     const [filter, setFilter] = useState("Todos");
     const [query, setQuery] = useState("");
     const [tipoFiltro, setTipoFiltro] = useState("");
@@ -26,6 +27,12 @@ const Supplies = () => {
     const [isEditLoading, setIsEditLoading] = useState(false);
     const [isDeleteLoading, setIsDeleteLoading] = useState(false);
     const { isSidebarOpen } = useSidebar();
+    const [modalMantenimiento, setModalMantenimiento] = useState(null);
+    const [cantidadMantenimiento, setCantidadMantenimiento] = useState(1);
+    const [observacionesMantenimiento, setObservacionesMantenimiento] = useState('');
+    const [modalQuitarMantenimiento, setModalQuitarMantenimiento] = useState(null);
+    const [cantidadQuitarMantenimiento, setCantidadQuitarMantenimiento] = useState(1);
+    const [observacionesQuitarMantenimiento, setObservacionesQuitarMantenimiento] = useState('');
 
     const [newInsumo, setNewInsumo] = useState({
         nombre: "",
@@ -36,25 +43,41 @@ const Supplies = () => {
         stock_actual: "",
         stock_minimo: "",
         stock_maximo: "",
+        estado: "Disponible"
     });
 
     const fetchInsumos = async () => {
         try {
-            const res = await fetch(`${API_URL}/Insumos`);
-            if (!res.ok) throw new Error("Error al obtener insumos");
-            const data = await res.json();
+            const [insumosResponse, mantenimientoResponse] = await Promise.all([
+                fetch(`${API_URL}/Insumos`),
+                fetch(`${API_URL}/mantenimiento/activos`)
+            ]);
 
-            const processedData = data.map(insumo => {
-                const ubicacion = insumo.ubicacion || "";
-                const matches = ubicacion.match(/^([A-Za-z]+)(\d+)$/);
+            if (!insumosResponse.ok) throw new Error("Error al obtener insumos");
+            if (!mantenimientoResponse.ok) throw new Error("Error al obtener insumos en mantenimiento");
+
+            const insumosData = await insumosResponse.json();
+            const mantenimientoData = await mantenimientoResponse.json();
+
+            console.log('Datos de insumos:', insumosData);
+            console.log('Datos de mantenimiento:', mantenimientoData);
+
+            // Actualizar el estado de los insumos
+            const insumosActualizados = insumosData.map(insumo => {
+                const enMantenimiento = mantenimientoData.find(m => m.id_insumo === insumo.id_insumo);
+                const cantidadMantenimiento = enMantenimiento ? enMantenimiento.cantidad : 0;
+                const stockDisponible = parseInt(insumo.stock_actual) - cantidadMantenimiento;
+                
                 return {
                     ...insumo,
-                    fila: matches ? matches[1] : "",
-                    columna: matches ? matches[2] : ""
+                    estado: cantidadMantenimiento > 0 ? "En Mantenimiento" : insumo.estado,
+                    cantidad_mantenimiento: cantidadMantenimiento,
+                    stock_disponible: stockDisponible
                 };
             });
 
-            setInsumos(processedData);
+            setInsumos(insumosActualizados);
+            setInsumosEnMantenimiento(mantenimientoData);
         } catch (error) {
             setError(error.message);
         }
@@ -82,11 +105,12 @@ const Supplies = () => {
     }, [insumos]);
 
     const handleFilter = (insumo) => {
-        const stockActual = parseInt(insumo.stock_actual);
+        const stockDisponible = parseInt(insumo.stock_disponible);
         const stockMinimo = parseInt(insumo.stock_minimo);
 
-        if (filter === "Disponibilidad Baja" && !(stockActual > 0 && stockActual <= stockMinimo)) return false;
-        if (filter === "Sin Disponibilidad" && stockActual !== 0) return false;
+        if (filter === "Disponibilidad Baja" && !(stockDisponible > 0 && stockDisponible <= stockMinimo)) return false;
+        if (filter === "Sin Disponibilidad" && stockDisponible !== 0) return false;
+        if (filter === "En Mantenimiento" && insumo.cantidad_mantenimiento === 0) return false;
         if (tipoFiltro && insumo.tipo !== tipoFiltro) return false;
         if (ubicacionFiltro && insumo.ubicacion !== ubicacionFiltro) return false;
         if (unidadFiltro && insumo.unidad_medida !== unidadFiltro) return false;
@@ -101,11 +125,14 @@ const Supplies = () => {
     };
 
     const getEstado = (insumo) => {
-        const stockActual = parseInt(insumo.stock_actual);
+        if (insumo.cantidad_mantenimiento > 0) {
+            return `En Mantenimiento (${insumo.cantidad_mantenimiento})`;
+        }
+        const stockDisponible = parseInt(insumo.stock_disponible);
         const stockMinimo = parseInt(insumo.stock_minimo);
 
-        if (stockActual === 0) return "Sin Disponibilidad";
-        if (stockActual <= stockMinimo) return "Disponibilidad Baja";
+        if (stockDisponible === 0) return "Sin Disponibilidad";
+        if (stockDisponible <= stockMinimo) return "Disponibilidad Baja";
         return "Disponible";
     };
 
@@ -130,7 +157,8 @@ const Supplies = () => {
                 unidad_medida: "",
                 stock_actual: "",
                 stock_minimo: "",
-                stock_maximo: ""
+                stock_maximo: "",
+                estado: "Disponible"
             });
             await fetchInsumos();
         } catch (error) {
@@ -153,6 +181,7 @@ const Supplies = () => {
                 stock_actual: parseInt(editInsumo.stock_actual) || 0,
                 stock_minimo: parseInt(editInsumo.stock_minimo) || 0,
                 stock_maximo: parseInt(editInsumo.stock_maximo) || 0,
+                estado: editInsumo.estado || "Disponible"
             };
 
             const res = await fetch(`${API_URL}/Insumos/${editInsumo.id_insumo}`, {
@@ -200,6 +229,95 @@ const Supplies = () => {
         }
     };
 
+    const handleMantenimiento = async (insumo) => {
+        setModalMantenimiento(insumo);
+        setCantidadMantenimiento(1);
+        setObservacionesMantenimiento('');
+    };
+
+    const handleConfirmarMantenimiento = async () => {
+        try {
+            const response = await fetch(`${API_URL}/mantenimiento`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    id_insumo: modalMantenimiento.id_insumo,
+                    cantidad: cantidadMantenimiento,
+                    observaciones: observacionesMantenimiento
+                }),
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || 'Error al iniciar mantenimiento');
+            }
+
+            const data = await response.json();
+            showMensaje('Insumo enviado a mantenimiento correctamente');
+            setModalMantenimiento(null);
+            fetchInsumos();
+        } catch (error) {
+            showMensaje(error.message);
+        }
+    };
+
+    const handleQuitarMantenimiento = (insumo) => {
+        setModalQuitarMantenimiento(insumo);
+        setCantidadQuitarMantenimiento(insumo.cantidad_mantenimiento);
+        setObservacionesQuitarMantenimiento('');
+    };
+
+    const handleConfirmarQuitarMantenimiento = async () => {
+        try {
+            // Primero obtenemos el mantenimiento activo para este insumo
+            const mantenimientoResponse = await fetch(`${API_URL}/mantenimiento/activos`);
+            if (!mantenimientoResponse.ok) {
+                throw new Error('Error al obtener mantenimientos activos');
+            }
+            const mantenimientosActivos = await mantenimientoResponse.json();
+            
+            // Buscamos el mantenimiento específico para este insumo
+            const mantenimiento = mantenimientosActivos.find(m => m.id_insumo === modalQuitarMantenimiento.id_insumo);
+            
+            if (!mantenimiento) {
+                throw new Error('No se encontró el mantenimiento activo para este insumo');
+            }
+
+            console.log('Mantenimiento encontrado:', mantenimiento);
+            console.log('Datos a enviar:', {
+                cantidad: cantidadQuitarMantenimiento,
+                observaciones: observacionesQuitarMantenimiento
+            });
+
+            // Usamos el id_mantenimiento en lugar de id
+            const response = await fetch(`${API_URL}/mantenimiento/${mantenimiento.id_mantenimiento}/finalizar`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    cantidad: cantidadQuitarMantenimiento,
+                    observaciones: observacionesQuitarMantenimiento
+                }),
+            });
+
+            const responseData = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(responseData.message || 'Error al quitar de mantenimiento');
+            }
+
+            showMensaje('Insumo quitado de mantenimiento correctamente');
+            setModalQuitarMantenimiento(null);
+            await fetchInsumos(); // Esperamos a que se actualice la lista
+        } catch (error) {
+            console.error('Error detallado:', error);
+            showMensaje(error.message || 'Error al quitar de mantenimiento');
+        }
+    };
+
     const showMensaje = (text) => {
         setMensaje(text);
         setTimeout(() => setMensaje(null), 3000);
@@ -236,9 +354,9 @@ const Supplies = () => {
                 </div>
 
                 <div className="flex gap-4 mb-4 flex-wrap overflow-x-auto">
-                    {["Todos", "Disponibilidad Baja", "Sin Disponibilidad"].map((option) => (
+                    {["Todos", "Disponibilidad Baja", "Sin Disponibilidad", "En Mantenimiento"].map((option, index) => (
                         <button
-                            key={option}
+                            key={`filter-${option}-${index}`}
                             onClick={() => setFilter(option)}
                             className={`px-3 py-1 rounded-md border ${
                                 filter === option
@@ -256,8 +374,8 @@ const Supplies = () => {
                         className="border px-2 py-1 rounded"
                     >
                         <option value="">Tipo</option>
-                        {tipos.map((t) => (
-                            <option key={t} value={t}>{t}</option>
+                        {tipos.map((t, index) => (
+                            <option key={`tipo-${t}-${index}`} value={t}>{t}</option>
                         ))}
                     </select>
 
@@ -267,8 +385,8 @@ const Supplies = () => {
                         className="border px-2 py-1 rounded"
                     >
                         <option value="">Ubicación</option>
-                        {ubicaciones.map((u) => (
-                            <option key={u} value={u}>{u}</option>
+                        {ubicaciones.map((u, index) => (
+                            <option key={`ubicacion-${u}-${index}`} value={u}>{u}</option>
                         ))}
                     </select>
 
@@ -278,8 +396,8 @@ const Supplies = () => {
                         className="border px-2 py-1 rounded"
                     >
                         <option value="">Unidad</option>
-                        {unidades.map((u) => (
-                            <option key={u} value={u}>{u}</option>
+                        {unidades.map((u, index) => (
+                            <option key={`unidad-${u}-${index}`} value={u}>{u}</option>
                         ))}
                     </select>
 
@@ -289,8 +407,8 @@ const Supplies = () => {
                         className="border px-2 py-1 rounded"
                     >
                         <option value="">Fila</option>
-                        {filas.map((f) => (
-                            <option key={f} value={f}>{f}</option>
+                        {filas.map((f, index) => (
+                            <option key={`fila-${f}-${index}`} value={f}>{f}</option>
                         ))}
                     </select>
 
@@ -300,8 +418,8 @@ const Supplies = () => {
                         className="border px-2 py-1 rounded"
                     >
                         <option value="">Columna</option>
-                        {columnas.map((c) => (
-                            <option key={c} value={c}>{c}</option>
+                        {columnas.map((c, index) => (
+                            <option key={`columna-${c}-${index}`} value={c}>{c}</option>
                         ))}
                     </select>
 
@@ -315,30 +433,55 @@ const Supplies = () => {
                         <th className="p-3">Ubicación</th>
                         <th className="p-3">Tipo</th>
                         <th className="p-3">Unidad</th>
-                        <th className="p-3">Disponibilidad</th>
+                        <th className="p-3">Stock Total</th>
+                        <th className="p-3">En Mantenimiento</th>
+                        <th className="p-3">Disponible</th>
                         <th className="p-3">Estado</th>
                         <th className="p-3">Acciones</th>
                     </tr>
                     </thead>
                     <tbody>
                     {insumos.length === 0 && !error ? (
-                        [...Array(5)].map((_, i) => <SkeletonRow key={i} columns={8} />)
+                        [...Array(5)].map((_, i) => <SkeletonRow key={`skeleton-${i}`} columns={10} />)
                     ) : (
                         insumos
                             .filter(handleFilter)
                             .filter((i) => i.nombre.toLowerCase().includes(query))
                             .map((insumo) => (
-                                <tr key={insumo.id_insumo} className="border-t border-gray-200 hover:bg-gray-50">
+                                <tr key={`insumo-row-${insumo.id_insumo}`} className="border-t border-gray-200 hover:bg-gray-50">
                                     <td className="p-3">{insumo.nombre}</td>
                                     <td className="p-3">{insumo.descripcion?.trim() ? insumo.descripcion : "Sin descripción"}</td>
                                     <td className="p-3">{insumo.ubicacion}</td>
                                     <td className="p-3">{insumo.tipo}</td>
                                     <td className="p-3">{insumo.unidad_medida}</td>
                                     <td className="p-3">{insumo.stock_actual}</td>
-                                    <td className="p-3">{getEstado(insumo)}</td>
+                                    <td className="p-3">
+                                        {insumo.cantidad_mantenimiento > 0 ? (
+                                            <span className="text-blue-600 font-medium">
+                                                {insumo.cantidad_mantenimiento}
+                                            </span>
+                                        ) : (
+                                            <span className="text-gray-400">-</span>
+                                        )}
+                                    </td>
+                                    <td className="p-3">{insumo.stock_disponible}</td>
+                                    <td className="p-3">
+                                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                                            insumo.cantidad_mantenimiento > 0
+                                                ? "bg-blue-100 text-blue-800"
+                                                : insumo.stock_disponible === 0
+                                                    ? "bg-red-100 text-red-800"
+                                                    : insumo.stock_disponible <= parseInt(insumo.stock_minimo)
+                                                        ? "bg-yellow-100 text-yellow-800"
+                                                        : "bg-green-100 text-green-800"
+                                        }`}>
+                                            {getEstado(insumo)}
+                                        </span>
+                                    </td>
                                     <td className="p-3">
                                         <div className="flex gap-2">
                                             <button
+                                                key={`edit-${insumo.id_insumo}`}
                                                 className="p-2 bg-[#592644] text-white rounded-md hover:bg-[#4b1f3d]"
                                                 onClick={() => {
                                                     setEditInsumo(insumo);
@@ -348,10 +491,22 @@ const Supplies = () => {
                                                 <PencilIcon className="w-4 h-4" />
                                             </button>
                                             <button
+                                                key={`delete-${insumo.id_insumo}`}
                                                 className="p-2 bg-[#592644] text-white rounded-md hover:bg-[#4b1f3d]"
                                                 onClick={() => setDeleteConfirmId(insumo.id_insumo)}
                                             >
                                                 <TrashIcon className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                key={`maintenance-${insumo.id_insumo}`}
+                                                className={`p-2 ${insumo.cantidad_mantenimiento > 0 ? "bg-green-500" : "bg-yellow-500"} text-white rounded-md hover:opacity-90`}
+                                                onClick={() => insumo.cantidad_mantenimiento > 0 ? handleQuitarMantenimiento(insumo) : handleMantenimiento(insumo)}
+                                                title={insumo.cantidad_mantenimiento > 0 ? "Quitar de mantenimiento" : "Poner en mantenimiento"}
+                                            >
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                </svg>
                                             </button>
                                         </div>
                                     </td>
@@ -378,8 +533,8 @@ const Supplies = () => {
                                     { name: "nombre", label: "Nombre", type: "text", required: true },
                                     { name: "descripcion", label: "Descripción", type: "text", required: false },
                                     { name: "ubicacion", label: "Ubicación", type: "text", required: true },
-                                ].map(({ name, label, type, required }) => (
-                                    <div key={name} className="flex flex-col">
+                                ].map(({ name, label, type, required }, index) => (
+                                    <div key={`new-insumo-${name}-${index}`} className="flex flex-col">
                                         <label className="text-sm font-medium text-gray-700 mb-1">{label}</label>
                                         <input
                                             type={type}
@@ -434,12 +589,26 @@ const Supplies = () => {
                                     )}
                                 </div>
 
+                                <div className="flex flex-col">
+                                    <label className="text-sm font-medium text-gray-700 mb-1">Estado</label>
+                                    <select
+                                        name="estado"
+                                        required
+                                        value={newInsumo.estado}
+                                        onChange={(e) => setNewInsumo({ ...newInsumo, estado: e.target.value })}
+                                        className="w-full border p-3 rounded-md border-gray-300 focus:ring-2 focus:ring-[#592644]"
+                                    >
+                                        <option value="Disponible">Disponible</option>
+                                        <option value="En Mantenimiento">En Mantenimiento</option>
+                                    </select>
+                                </div>
+
                                 {[
                                     { name: "stock_actual", label: "Dispnobilidad actual" },
                                     { name: "stock_minimo", label: "Cantidad mínima aceptada" },
                                     { name: "stock_maximo", label: "Cantidad máxima" },
-                                ].map(({ name, label }) => (
-                                    <div key={name} className="flex flex-col">
+                                ].map(({ name, label }, index) => (
+                                    <div key={`new-insumo-stock-${name}-${index}`} className="flex flex-col">
                                         <label className="text-sm font-medium text-gray-700 mb-1">{label}</label>
                                         <input
                                             type="number"
@@ -489,8 +658,8 @@ const Supplies = () => {
                                     { name: "nombre", label: "Nombre", type: "text" },
                                     { name: "descripcion", label: "Descripción", type: "text" },
                                     { name: "ubicacion", label: "Ubicación", type: "text" },
-                                ].map(({ name, label, type }) => (
-                                    <div key={name} className="flex flex-col">
+                                ].map(({ name, label, type }, index) => (
+                                    <div key={`edit-insumo-${name}-${index}`} className="flex flex-col">
                                         <label htmlFor={name} className="mb-1 font-medium text-gray-700">
                                             {label}
                                         </label>
@@ -552,12 +721,26 @@ const Supplies = () => {
                                     )}
                                 </div>
 
+                                <div className="flex flex-col">
+                                    <label className="text-sm font-medium text-gray-700 mb-1">Estado</label>
+                                    <select
+                                        name="estado"
+                                        required
+                                        value={editInsumo.estado || "Disponible"}
+                                        onChange={(e) => setEditInsumo({ ...editInsumo, estado: e.target.value })}
+                                        className="w-full border p-3 rounded-md border-gray-300 focus:ring-2 focus:ring-[#592644]"
+                                    >
+                                        <option value="Disponible">Disponible</option>
+                                        <option value="En Mantenimiento">En Mantenimiento</option>
+                                    </select>
+                                </div>
+
                                 {[
                                     { name: "stock_actual", label: "Disponibilidad actual", type: "number" },
                                     { name: "stock_minimo", label: "Disponibilidad mínima", type: "number" },
                                     { name: "stock_maximo", label: "Disponibilidad máxima", type: "number" },
-                                ].map(({ name, label, type }) => (
-                                    <div key={name} className="flex flex-col">
+                                ].map(({ name, label, type }, index) => (
+                                    <div key={`edit-insumo-stock-${name}-${index}`} className="flex flex-col">
                                         <label htmlFor={name} className="mb-1 font-medium text-gray-700">
                                             {label}
                                         </label>
@@ -633,6 +816,216 @@ const Supplies = () => {
                                     ) : (
                                         'Eliminar'
                                     )}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {modalMantenimiento && (
+                    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
+                        <div className="bg-white rounded-xl p-8 w-full max-w-md shadow-2xl transform transition-all">
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="text-2xl font-bold text-[#592644]">
+                                    Enviar a Mantenimiento
+                                </h3>
+                                <button 
+                                    onClick={() => setModalMantenimiento(null)}
+                                    className="text-gray-500 hover:text-red-500 transition-colors"
+                                >
+                                    <XMarkIcon className="w-6 h-6" />
+                                </button>
+                            </div>
+
+                            <div className="mb-6">
+                                <div className="bg-gray-50 p-4 rounded-lg mb-4">
+                                    <h4 className="font-semibold text-gray-700 mb-2">{modalMantenimiento.nombre}</h4>
+                                    <p className="text-sm text-gray-600">
+                                        Stock disponible: <span className="font-bold">{modalMantenimiento.stock_actual}</span>
+                                    </p>
+                                </div>
+
+                                <div className="mb-6">
+                                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                                        Cantidad a enviar a mantenimiento
+                                    </label>
+                                    <div className="flex items-center justify-center space-x-4">
+                                        <button
+                                            onClick={() => setCantidadMantenimiento(prev => Math.max(1, prev - 1))}
+                                            className="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 hover:text-gray-800 transition-colors"
+                                        >
+                                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 12H4" />
+                                            </svg>
+                                        </button>
+                                        <div className="w-20 text-center">
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                max={modalMantenimiento.stock_actual}
+                                                value={cantidadMantenimiento}
+                                                onChange={(e) => {
+                                                    const value = parseInt(e.target.value);
+                                                    if (!isNaN(value) && value >= 1 && value <= modalMantenimiento.stock_actual) {
+                                                        setCantidadMantenimiento(value);
+                                                    }
+                                                }}
+                                                className="w-full text-center text-2xl font-bold text-[#592644] bg-transparent border-none focus:outline-none"
+                                            />
+                                        </div>
+                                        <button
+                                            onClick={() => setCantidadMantenimiento(prev => Math.min(modalMantenimiento.stock_actual, prev + 1))}
+                                            className="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 hover:text-gray-800 transition-colors"
+                                        >
+                                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    <div className="mt-2 text-center">
+                                        <button
+                                            onClick={() => setCantidadMantenimiento(modalMantenimiento.stock_actual)}
+                                            className="text-sm text-[#592644] hover:text-[#4b1f3d] underline"
+                                        >
+                                            Usar todo el stock disponible
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="mb-6">
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Observaciones
+                                    </label>
+                                    <textarea
+                                        value={observacionesMantenimiento}
+                                        onChange={(e) => setObservacionesMantenimiento(e.target.value)}
+                                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#592644] focus:border-[#592644] resize-none"
+                                        rows="3"
+                                        placeholder="Ingrese observaciones sobre el mantenimiento..."
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end gap-4">
+                                <button
+                                    onClick={() => setModalMantenimiento(null)}
+                                    className="px-6 py-2 text-gray-600 hover:text-gray-800 font-medium"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={handleConfirmarMantenimiento}
+                                    className="px-6 py-2 bg-[#592644] text-white rounded-lg hover:bg-[#4b1f3d] font-medium transition-colors flex items-center gap-2"
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    Confirmar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {modalQuitarMantenimiento && (
+                    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
+                        <div className="bg-white rounded-xl p-8 w-full max-w-md shadow-2xl transform transition-all">
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="text-2xl font-bold text-[#592644]">
+                                    Quitar de Mantenimiento
+                                </h3>
+                                <button 
+                                    onClick={() => setModalQuitarMantenimiento(null)}
+                                    className="text-gray-500 hover:text-red-500 transition-colors"
+                                >
+                                    <XMarkIcon className="w-6 h-6" />
+                                </button>
+                            </div>
+
+                            <div className="mb-6">
+                                <div className="bg-gray-50 p-4 rounded-lg mb-4">
+                                    <h4 className="font-semibold text-gray-700 mb-2">{modalQuitarMantenimiento.nombre}</h4>
+                                    <p className="text-sm text-gray-600">
+                                        En mantenimiento: <span className="font-bold">{modalQuitarMantenimiento.cantidad_mantenimiento}</span>
+                                    </p>
+                                </div>
+
+                                <div className="mb-6">
+                                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                                        Cantidad a quitar de mantenimiento
+                                    </label>
+                                    <div className="flex items-center justify-center space-x-4">
+                                        <button
+                                            onClick={() => setCantidadQuitarMantenimiento(prev => Math.max(1, prev - 1))}
+                                            className="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 hover:text-gray-800 transition-colors"
+                                        >
+                                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 12H4" />
+                                            </svg>
+                                        </button>
+                                        <div className="w-20 text-center">
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                max={modalQuitarMantenimiento.cantidad_mantenimiento}
+                                                value={cantidadQuitarMantenimiento}
+                                                onChange={(e) => {
+                                                    const value = parseInt(e.target.value);
+                                                    if (!isNaN(value) && value >= 1 && value <= modalQuitarMantenimiento.cantidad_mantenimiento) {
+                                                        setCantidadQuitarMantenimiento(value);
+                                                    }
+                                                }}
+                                                className="w-full text-center text-2xl font-bold text-[#592644] bg-transparent border-none focus:outline-none"
+                                            />
+                                        </div>
+                                        <button
+                                            onClick={() => setCantidadQuitarMantenimiento(prev => Math.min(modalQuitarMantenimiento.cantidad_mantenimiento, prev + 1))}
+                                            className="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 hover:text-gray-800 transition-colors"
+                                        >
+                                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    <div className="mt-2 text-center">
+                                        <button
+                                            onClick={() => setCantidadQuitarMantenimiento(modalQuitarMantenimiento.cantidad_mantenimiento)}
+                                            className="text-sm text-[#592644] hover:text-[#4b1f3d] underline"
+                                        >
+                                            Quitar todo el stock en mantenimiento
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="mb-6">
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Observaciones
+                                    </label>
+                                    <textarea
+                                        value={observacionesQuitarMantenimiento}
+                                        onChange={(e) => setObservacionesQuitarMantenimiento(e.target.value)}
+                                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#592644] focus:border-[#592644] resize-none"
+                                        rows="3"
+                                        placeholder="Ingrese observaciones sobre la finalización del mantenimiento..."
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end gap-4">
+                                <button
+                                    onClick={() => setModalQuitarMantenimiento(null)}
+                                    className="px-6 py-2 text-gray-600 hover:text-gray-800 font-medium"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={handleConfirmarQuitarMantenimiento}
+                                    className="px-6 py-2 bg-[#592644] text-white rounded-lg hover:bg-[#4b1f3d] font-medium transition-colors flex items-center gap-2"
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    Confirmar
                                 </button>
                             </div>
                         </div>
