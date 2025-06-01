@@ -298,17 +298,22 @@ const Alumnos = () => {
     };
 
     const filteredSolicitudes = solicitudes
-        .filter(s => 
-            s.estudiante_nombre.toLowerCase().includes(query.toLowerCase()) ||
-            s.materia_nombre.toLowerCase().includes(query.toLowerCase())
-        )
+        .filter(s => {
+            const queryLower = query.toLowerCase();
+            const nombreCompleto = s.estudiante_nombre.toLowerCase();
+            const palabras = nombreCompleto.split(' ');
+            // Buscar si alguna palabra del nombre contiene la consulta
+            const matchPalabra = palabras.some(palabra => palabra.includes(queryLower));
+            return (
+                matchPalabra ||
+                nombreCompleto.includes(queryLower) ||
+                s.materia_nombre.toLowerCase().includes(queryLower)
+            );
+        })
         .filter(s => !estadoFilter || s.estado === estadoFilter)
         .sort((a, b) => {
-            // Priorizar solicitudes pendientes
             if (a.estado === 'Pendiente' && b.estado !== 'Pendiente') return -1;
             if (a.estado !== 'Pendiente' && b.estado === 'Pendiente') return 1;
-            
-            // Si ambas son pendientes o ninguna es pendiente, ordenar por fecha
             return new Date(b.fecha_hora_inicio) - new Date(a.fecha_hora_inicio);
         });
 
@@ -396,7 +401,7 @@ const Alumnos = () => {
                             <div className="flex-1">
                                 <SearchBar
                                     value={query}
-                                    onChange={(e) => setQuery(e.target.value)}
+                                    onChange={setQuery}
                                     placeholder="Buscar por estudiante o materia..."
                                 />
                             </div>
