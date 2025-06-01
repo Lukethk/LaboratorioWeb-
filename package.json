@@ -19,6 +19,7 @@
     "@heroicons/react": "^2.2.0",
     "@react-pdf/renderer": "^4.3.0",
     "@tailwindcss/vite": "^4.0.17",
+    "@tanstack/react-virtual": "^3.13.9",
     "axios": "^1.9.0",
     "buffer": "^6.0.3",
     "chart.js": "^4.4.8",

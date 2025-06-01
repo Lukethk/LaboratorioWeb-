@@ -31,6 +31,7 @@ const Solicitudes = () => {
         fecha: "",
     });
     const [items, setItems] = useState([]);
+    const [mensaje, setMensaje] = useState(null);
     const { isSidebarOpen } = useSidebar();
 
     const fetchSolicitudes = async () => {
@@ -100,15 +101,7 @@ const Solicitudes = () => {
 
     const openCreateModal = () => {
         const criticos = insumos.filter((i) => getEstado(i) === "Stock Bajo");
-        setItems(
-            criticos.map((i) => ({
-                id: i.id_insumo,
-                nombre: i.nombre,
-                cantidad: i.stock_actual,
-                precio: 0,
-                valorTotal: 0,
-            }))
-        );
+        setItems([]);
         setHeader({ unidad: "", responsable: "", fecha: "" });
         setModalOpen(true);
     };
@@ -129,6 +122,37 @@ const Solicitudes = () => {
             next[idx].valorTotal = next[idx].cantidad * next[idx].precio;
             return next;
         });
+    };
+
+    const handleSeleccionarInsumo = (insumo) => {
+        if (items.length >= 7) {
+            showMensaje("Solo puedes seleccionar hasta 7 insumos");
+            return;
+        }
+
+        const yaSeleccionado = items.find(i => i.id === insumo.id_insumo);
+        if (yaSeleccionado) {
+            showMensaje("Este insumo ya ha sido seleccionado");
+            return;
+        }
+
+        setItems(prev => [...prev, {
+            id: insumo.id_insumo,
+            nombre: insumo.nombre,
+            unidad_medida: insumo.unidad_medida,
+            cantidad: insumo.stock_actual,
+            precio: 0,
+            valorTotal: 0,
+        }]);
+    };
+
+    const handleEliminarInsumo = (id) => {
+        setItems(prev => prev.filter(item => item.id !== id));
+    };
+
+    const showMensaje = (text) => {
+        setMensaje(text);
+        setTimeout(() => setMensaje(null), 3000);
     };
 
     const handleCreatePDF = async (e) => {
@@ -453,148 +477,153 @@ const Solicitudes = () => {
                 )}
 
                 {modalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center">
+                    <div className="fixed inset-0 z-50 flex justify-center items-center">
                         <div className="fixed inset-0 bg-white/30 backdrop-blur-sm" onClick={() => setModalOpen(false)} />
-                        <div className="bg-white p-6 rounded-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto relative z-50">
-                            <div className="flex justify-between items-center mb-6">
-                                <h2 className="text-xl font-bold">Nueva Solicitud de Insumos</h2>
+                        <div className="relative z-50 bg-white p-6 rounded-xl w-full max-w-4xl mx-4 max-h-[80vh] overflow-y-auto shadow-lg animate-slideUpBounceIn">
+                            <div className="flex justify-between items-center mb-4">
+                                <h2 className="text-xl font-bold text-[#592644]">Crear Solicitud de Adquisición</h2>
                                 <button onClick={() => setModalOpen(false)}>
-                                    <XMarkIcon className="w-6 h-6 text-gray-700 hover:text-red-500 transition" />
+                                    <XMarkIcon className="w-6 h-6 text-gray-500 hover:text-red-500" />
                                 </button>
                             </div>
 
-                            <form
-                                className="grid grid-cols-1 sm:grid-cols-2 gap-4"
-                                onSubmit={handleCreatePDF}
-                            >
-                                {[{ label: "Unidad Solicitante", key: "unidad", type: "text" },
-                                    { label: "Responsable", key: "responsable", type: "text" },
-                                    { label: "Fecha", key: "fecha", type: "date" }].map(({ label, key, type }) => (
-                                    <div key={key} className="col-span-full">
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+                            <form onSubmit={handleCreatePDF} className="space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Unidad</label>
                                         <input
-                                            type={type}
-                                            value={header[key]}
-                                            onChange={(e) => setHeader((h) => ({ ...h, [key]: e.target.value }))}
-                                            className="w-full border p-2 rounded"
+                                            type="text"
+                                            value={header.unidad}
+                                            onChange={(e) => setHeader(prev => ({ ...prev, unidad: e.target.value }))}
+                                            className="w-full border p-2 rounded-md"
                                             required
                                         />
                                     </div>
-                                ))}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Responsable</label>
+                                        <input
+                                            type="text"
+                                            value={header.responsable}
+                                            onChange={(e) => setHeader(prev => ({ ...prev, responsable: e.target.value }))}
+                                            className="w-full border p-2 rounded-md"
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Fecha</label>
+                                        <input
+                                            type="date"
+                                            value={header.fecha}
+                                            onChange={(e) => setHeader(prev => ({ ...prev, fecha: e.target.value }))}
+                                            className="w-full border p-2 rounded-md"
+                                            required
+                                        />
+                                    </div>
+                                </div>
 
-                                <div className="col-span-full">
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Insumos Críticos</label>
+                                <div className="mt-6">
+                                    <h3 className="text-lg font-semibold text-[#592644] mb-4">Insumos Críticos Disponibles</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                                        {insumos
+                                            .filter(i => getEstado(i) === "Stock Bajo")
+                                            .map(insumo => (
+                                                <div key={insumo.id_insumo} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                                                    <div className="flex justify-between items-start">
+                                                        <div>
+                                                            <h4 className="font-semibold">{insumo.nombre}</h4>
+                                                            <p className="text-sm text-gray-600">Stock actual: {insumo.stock_actual}</p>
+                                                            <p className="text-sm text-gray-600">Stock mínimo: {insumo.stock_minimo}</p>
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleSeleccionarInsumo(insumo)}
+                                                            className="px-3 py-1 bg-[#592644] text-white rounded-md hover:bg-[#4b1f3d] text-sm"
+                                                        >
+                                                            Agregar
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                    </div>
+
+                                    <h3 className="text-lg font-semibold text-[#592644] mb-4">Insumos Seleccionados ({items.length}/7)</h3>
                                     <div className="overflow-x-auto">
                                         <table className="w-full text-sm">
                                             <thead className="bg-gray-100">
-                                            <tr>
-                                                <th className="px-2 py-1 border">Nombre</th>
-                                                <th className="px-2 py-1 border">Cantidad</th>
-                                                <th className="px-2 py-1 border">Precio Estimado</th>
-                                                <th className="px-2 py-1 border">Valor Total</th>
-                                                <th className="px-2 py-1 border">Acción</th>
-                                            </tr>
+                                                <tr>
+                                                    <th className="px-2 py-1 border">Nombre</th>
+                                                    <th className="px-2 py-1 border">Unidad</th>
+                                                    <th className="px-2 py-1 border">Cantidad</th>
+                                                    <th className="px-2 py-1 border">Precio Estimado</th>
+                                                    <th className="px-2 py-1 border">Valor Total</th>
+                                                    <th className="px-2 py-1 border">Acción</th>
+                                                </tr>
                                             </thead>
                                             <tbody>
-                                            {items.map((it, idx) => (
-                                                <tr key={it.id} className="hover:bg-gray-50">
-                                                    <td className="px-2 py-1 border">{it.nombre}</td>
-                                                    <td className="px-2 py-1 border text-center">
-                                                        <div className="flex items-center justify-center space-x-2">
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => handleCantidadChange(idx, it.cantidad - 1)}
-                                                                className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
-                                                                disabled={it.cantidad <= 0}
-                                                            >
-                                                                -
-                                                            </button>
+                                                {items.map((item, index) => (
+                                                    <tr key={item.id}>
+                                                        <td className="px-2 py-1 border">{item.nombre}</td>
+                                                        <td className="px-2 py-1 border">{item.unidad_medida || ''}</td>
+                                                        <td className="px-2 py-1 border">
                                                             <input
                                                                 type="number"
-                                                                min="0"
-                                                                className="w-16 border p-1 rounded text-center"
-                                                                value={it.cantidad}
-                                                                onChange={(e) => handleCantidadChange(idx, e.target.value)}
-                                                                required
+                                                                value={item.cantidad}
+                                                                onChange={(e) => handleCantidadChange(index, e.target.value)}
+                                                                className="w-full border px-1"
+                                                                min="1"
                                                             />
+                                                        </td>
+                                                        <td className="px-2 py-1 border">
+                                                            <input
+                                                                type="number"
+                                                                value={item.precio}
+                                                                onChange={(e) => handlePrecioChange(index, e.target.value)}
+                                                                className="w-full border px-1"
+                                                                min="0"
+                                                            />
+                                                        </td>
+                                                        <td className="px-2 py-1 border text-right">
+                                                            {item.valorTotal.toFixed(2)} Bs
+                                                        </td>
+                                                        <td className="px-2 py-1 border text-center">
                                                             <button
                                                                 type="button"
-                                                                onClick={() => handleCantidadChange(idx, it.cantidad + 1)}
-                                                                className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
+                                                                onClick={() => handleEliminarInsumo(item.id)}
+                                                                className="text-red-500 hover:text-red-700"
                                                             >
-                                                                +
+                                                                <XMarkIcon className="w-5 h-5" />
                                                             </button>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-2 py-1 border">
-                                                        <input
-                                                            type="number"
-                                                            step="0.01"
-                                                            className="w-full border p-1 rounded text-right"
-                                                            value={it.precio}
-                                                            onChange={(e) => handlePrecioChange(idx, e.target.value)}
-                                                            required
-                                                        />
-                                                    </td>
-                                                    <td className="px-2 py-1 border text-right">{it.valorTotal.toFixed(2)}</td>
-                                                    <td className="px-2 py-1 border">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleQuitarInsumo(idx)}
-                                                            className="text-red-500 hover:text-red-700"
-                                                        >
-                                                            <XMarkIcon className="w-5 h-5" />
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            ))}
+                                                        </td>
+                                                    </tr>
+                                                ))}
                                             </tbody>
                                         </table>
                                     </div>
                                 </div>
 
-                                <div className="col-span-full flex justify-end space-x-2 mt-4">
+                                <div className="flex justify-end gap-4 mt-6">
                                     <button
                                         type="button"
                                         onClick={() => setModalOpen(false)}
-                                        className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+                                        className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-100"
                                     >
                                         Cancelar
                                     </button>
-
-                                    {items.length > 0 && (
-                                        <PDFDownloadLink
-                                            key={items.map(it => it.id).join('-')}
-                                            document={
-                                                <FormularioPDF
-                                                    data={{
-                                                        unidadSolicitante: header.unidad,
-                                                        fecha: header.fecha,
-                                                        responsable: header.responsable,
-                                                        items: items.map(it => ({
-                                                            cantidad: it.cantidad,
-                                                            descripcion: it.nombre,
-                                                            pu: it.precio,
-                                                            total: it.valorTotal,
-                                                        })),
-                                                    }}
-                                                />
-                                            }
-                                            fileName={`Solicitud_${header.fecha || 'sin_fecha'}.pdf`}
-                                        >
-                                            {({ loading }) => (
-                                                <button
-                                                    type="submit"
-                                                    className="px-4 py-2 bg-[#592644] text-white rounded hover:bg-[#4b1f3d]"
-                                                >
-                                                    {loading ? 'Generando…' : 'Guardar y Exportar PDF'}
-                                                </button>
-                                            )}
-                                        </PDFDownloadLink>
-                                    )}
+                                    <button
+                                        type="submit"
+                                        className="px-4 py-2 bg-[#592644] text-white rounded-md hover:bg-[#4b1f3d]"
+                                    >
+                                        Crear Solicitud
+                                    </button>
                                 </div>
                             </form>
                         </div>
+                    </div>
+                )}
+
+                {mensaje && (
+                    <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-[#592644] text-white px-6 py-3 rounded-xl shadow-lg z-50">
+                        {mensaje}
                     </div>
                 )}
 
