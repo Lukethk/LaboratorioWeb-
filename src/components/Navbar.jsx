@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import NotificationDropdown from './NotificationDropdown';
+import { LogOut } from 'lucide-react';
 
 const API_URL = "https://universidad-la9h.onrender.com";
 
@@ -97,33 +98,15 @@ const FontSizeMenu = ({ openMenu, setOpenMenu }) => {
     );
 };
 
-const ProfileMenu = ({ openMenu, setOpenMenu }) => {
-    const [gestor, setGestor] = useState(null);
+const ProfileMenu = ({ openMenu, setOpenMenu, gestor }) => {
     const navigate = useNavigate();
     const btnRef = useRef(null);
     const open = openMenu === 'profile';
 
-    useEffect(() => {
-        if (open) {
-            const id = localStorage.getItem('gestorId');
-            if (id) {
-                fetch(`${API_URL}/encargados/${id}`)
-                    .then(res => res.json())
-                    .then(data => setGestor(data))
-                    .catch(() => setGestor(null));
-            }
-        }
-    }, [open]);
-
-    
     const handleLogout = () => {
-        
-
-        
-            sessionStorage.removeItem("auth");
-            sessionStorage.removeItem("dashboardEntered");
-            navigate("/login");
-        
+        sessionStorage.removeItem("auth");
+        sessionStorage.removeItem("dashboardEntered");
+        navigate("/login");
     };
 
     return (
@@ -134,23 +117,18 @@ const ProfileMenu = ({ openMenu, setOpenMenu }) => {
                 className="p-2 rounded-full hover:bg-gray-200 transition flex items-center justify-center"
                 aria-label="Perfil"
             >
-                <i className="far fa-user text-xl text-gray-500 align-middle"></i>
+                {gestor && gestor.nombre ? (
+                    <div className="w-9 h-9 rounded-full bg-[#592644] flex items-center justify-center text-white font-bold text-lg">
+                        {getInitials(gestor.nombre)}
+                    </div>
+                ) : (
+                    <i className="far fa-user text-xl text-gray-500 align-middle"></i>
+                )}
             </button>
             {open && (
                 <div className="absolute right-0 mt-2 w-72 bg-white rounded-xl shadow-lg border border-gray-200 z-50 animate-fade-in">
                     <div className="p-6 flex flex-col items-center justify-center gap-2">
-                        <i className="far fa-user-circle text-4xl text-[#592644] mb-2"></i>
-                        {gestor ? (
-                            <>
-                                <p className="font-semibold text-[#592644] text-lg">{gestor.nombre}</p>
-                                <p className="text-gray-500 text-sm mb-2">{gestor.correo}</p>
-                            </>
-                        ) : (
-                            <div className="flex flex-col items-center mb-2">
-                                <span className="text-3xl">😉</span>
-                                <p className="text-gray-400 text-sm">Próximamente</p>
-                            </div>
-                        )}
+                        
                         <button
                             onClick={handleLogout}
                             className="mt-2 px-4 py-2 bg-[#592644] text-white rounded-lg hover:bg-[#724c6d] transition font-semibold"
@@ -318,9 +296,34 @@ const GlobalSearch = ({ openMenu, setOpenMenu }) => {
     );
 };
 
+const getInitials = (nombreCompleto) => {
+    if (!nombreCompleto) return '';
+    const palabras = nombreCompleto.trim().split(' ');
+    if (palabras.length === 1) return palabras[0][0].toUpperCase();
+    return (palabras[0][0] + palabras[palabras.length - 1][0]).toUpperCase();
+};
+
 const Navbar = () => {
     const navigate = useNavigate();
     const [openMenu, setOpenMenu] = useState(null);
+    const [gestor, setGestor] = useState(null);
+
+    useEffect(() => {
+        const id = localStorage.getItem('gestorId');
+        if (id) {
+            fetch(`${API_URL}/encargados/${id}`)
+                .then(res => res.json())
+                .then(data => setGestor(data))
+                .catch(() => setGestor(null));
+        }
+    }, []);
+
+    const handleLogout = () => {
+        sessionStorage.removeItem("auth");
+        sessionStorage.removeItem("dashboardEntered");
+        navigate("/login");
+    };
+
     return (
         <nav className="w-full flex items-center justify-end gap-2 bg-gray-50 px-4 py-2 border-b border-gray-200">
             <GlobalSearch openMenu={openMenu} setOpenMenu={setOpenMenu} />
@@ -329,7 +332,21 @@ const Navbar = () => {
             </button>
             <FontSizeMenu openMenu={openMenu} setOpenMenu={setOpenMenu} />
             <NotificationDropdown />
-            <ProfileMenu openMenu={openMenu} setOpenMenu={setOpenMenu} />
+            {gestor && gestor.nombre && (
+                <div className="flex items-center gap-2 mr-2">
+                    <div className="w-9 h-9 rounded-full bg-[#592644] flex items-center justify-center text-white font-bold text-lg">
+                        {getInitials(gestor.nombre)}
+                    </div>
+                    <span className="font-medium text-[#592644] text-base">{gestor.nombre}</span>
+                </div>
+            )}
+            <button
+                className="p-2 rounded-full hover:bg-red-100 transition flex items-center justify-center"
+                aria-label="Cerrar sesión"
+                onClick={handleLogout}
+            >
+                <LogOut className="w-6 h-6 text-red-600" />
+            </button>
         </nav>
     );
 };
