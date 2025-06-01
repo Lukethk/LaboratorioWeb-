@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Sidebar from "../components/Sidebar";
 import SearchBar from "../components/SearchBar";
 import { PencilIcon, TrashIcon, XMarkIcon } from "@heroicons/react/24/solid";
 import SkeletonRow from "../components/SkeletonRow";
 import { useSidebar } from "../context/SidebarContext";
+import { useNotifications } from '../context/NotificationContext';
 
 const API_URL = "https://universidad-la9h.onrender.com";
 
@@ -33,6 +34,7 @@ const Supplies = () => {
     const [modalQuitarMantenimiento, setModalQuitarMantenimiento] = useState(null);
     const [cantidadQuitarMantenimiento, setCantidadQuitarMantenimiento] = useState(1);
     const [observacionesQuitarMantenimiento, setObservacionesQuitarMantenimiento] = useState('');
+    const { addNotification } = useNotifications();
 
     const [newInsumo, setNewInsumo] = useState({
         nombre: "",
@@ -46,6 +48,8 @@ const Supplies = () => {
         estado: "Disponible"
     });
 
+    const notifiedInsumos = useRef(new Set(JSON.parse(localStorage.getItem('notifiedInsumos') || '[]')));
+
     const fetchInsumos = async () => {
         try {
             const [insumosResponse, mantenimientoResponse] = await Promise.all([
@@ -58,6 +62,31 @@ const Supplies = () => {
 
             const insumosData = await insumosResponse.json();
             const mantenimientoData = await mantenimientoResponse.json();
+
+            // Notificaciones por insumo
+            insumosData.forEach(insumo => {
+                const stockDisponible = parseInt(insumo.stock_actual);
+                const stockMinimo = parseInt(insumo.stock_minimo);
+                if (stockDisponible === 0 && !notifiedInsumos.current.has(insumo.id_insumo)) {
+                    addNotification({
+                        type: 'insumo',
+                        title: 'Insumo sin disponibilidad',
+                        message: `El insumo "${insumo.nombre}" está sin stock.`,
+                        timestamp: new Date()
+                    });
+                    notifiedInsumos.current.add(insumo.id_insumo);
+                    localStorage.setItem('notifiedInsumos', JSON.stringify(Array.from(notifiedInsumos.current)));
+                } else if (stockDisponible <= stockMinimo && !notifiedInsumos.current.has(insumo.id_insumo)) {
+                    addNotification({
+                        type: 'insumo',
+                        title: 'Insumo con disponibilidad baja',
+                        message: `El insumo "${insumo.nombre}" tiene disponibilidad baja.`,
+                        timestamp: new Date()
+                    });
+                    notifiedInsumos.current.add(insumo.id_insumo);
+                    localStorage.setItem('notifiedInsumos', JSON.stringify(Array.from(notifiedInsumos.current)));
+                }
+            });
 
             console.log('Datos de insumos:', insumosData);
             console.log('Datos de mantenimiento:', mantenimientoData);

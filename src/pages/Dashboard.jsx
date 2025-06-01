@@ -226,7 +226,7 @@ const Dashboard = () => {
 
                                 <div className="bg-white p-4 rounded-lg shadow">
                                     <h3 className="text-xl font-bold text-[#592644] mb-4">
-                                        Alertas y notificaciones
+                                        Alertas 
                                     </h3>
                                     <div className="max-h-[600px] overflow-y-auto">
                                         <AlertsTable alerts={alertas} error={error} reload={fetchData} />

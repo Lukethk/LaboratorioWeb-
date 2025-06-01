@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Sidebar from "../components/Sidebar.jsx";
 import { PencilIcon, XMarkIcon, PlusIcon } from '@heroicons/react/24/solid';
 import { pdf, PDFDownloadLink } from "@react-pdf/renderer";
@@ -33,12 +33,26 @@ const Solicitudes = () => {
     const [items, setItems] = useState([]);
     const [mensaje, setMensaje] = useState(null);
     const { isSidebarOpen } = useSidebar();
+    const notifiedSolicitudesEstudiante = useRef(new Set(JSON.parse(localStorage.getItem('notifiedSolicitudesEstudiante') || '[]')));
 
     const fetchSolicitudes = async () => {
         try {
             const res = await fetch(`${API_URL}/solicitudes`);
             if (!res.ok) throw new Error("Error al obtener solicitudes");
             const data = await res.json();
+            // Notificar nuevas solicitudes de estudiante
+            data.forEach(solicitud => {
+                if (solicitud.estado === 'Pendiente' && !notifiedSolicitudesEstudiante.current.has(solicitud.id_solicitud)) {
+                    addNotification({
+                        type: 'solicitud_estudiante',
+                        title: 'Nueva Solicitud de Estudiante',
+                        message: `Nueva solicitud: ${solicitud.nombre_solicitud}`,
+                        timestamp: new Date()
+                    });
+                    notifiedSolicitudesEstudiante.current.add(solicitud.id_solicitud);
+                    localStorage.setItem('notifiedSolicitudesEstudiante', JSON.stringify(Array.from(notifiedSolicitudesEstudiante.current)));
+                }
+            });
             setSolicitudes(data);
         } catch (e) {
             console.error(e);

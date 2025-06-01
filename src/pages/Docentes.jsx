@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import emailjs from '@emailjs/browser';
 import Sidebar from "../components/Sidebar.jsx";
 import SearchBar from "../components/SearchBar";
 import SkeletonCard from "../components/SkeletonCard.jsx";
 import { useSidebar } from "../context/SidebarContext";
+import { useNotifications } from '../context/NotificationContext';
 
 const API_URL = "https://universidad-la9h.onrender.com";
 
@@ -48,6 +49,7 @@ const SolicitudesUso = () => {
     const [devolucionParcial, setDevolucionParcial] = useState({});
     const [isCompleting, setIsCompleting] = useState(false);
     const { isSidebarOpen } = useSidebar();
+    const { addNotification } = useNotifications();
 
     // Estados para la animación de cortinas
     const [showCurtains, setShowCurtains] = useState(true);
@@ -66,6 +68,8 @@ const SolicitudesUso = () => {
     const [enviandoCorreo, setEnviandoCorreo] = useState(false);
 
     const [laboratorios, setLaboratorios] = useState([]);
+
+    const notifiedSolicitudes = useRef(new Set(JSON.parse(localStorage.getItem('notifiedSolicitudesDocente') || '[]')));
 
     const abrirModalAsignaciones = async () => {
         setShowDocentesModal(true);        // muestra el modal
@@ -126,6 +130,19 @@ const SolicitudesUso = () => {
             setLoading(true);
             const res = await fetch(`${API_URL}/solicitudes-uso`);
             const data = await res.json();
+            // Notificar nuevas solicitudes de docente
+            data.forEach(solicitud => {
+                if (solicitud.estado === 'Pendiente' && !notifiedSolicitudes.current.has(solicitud.id_solicitud)) {
+                    addNotification({
+                        type: 'solicitud_docente',
+                        title: 'Nueva Solicitud de Docente',
+                        message: `Nueva solicitud de ${solicitud.docente_nombre} para ${solicitud.laboratorio_nombre}`,
+                        timestamp: new Date()
+                    });
+                    notifiedSolicitudes.current.add(solicitud.id_solicitud);
+                    localStorage.setItem('notifiedSolicitudesDocente', JSON.stringify(Array.from(notifiedSolicitudes.current)));
+                }
+            });
             setSolicitudes(data);
         } catch (e) {
             setError(e.message || "Error desconocido");
