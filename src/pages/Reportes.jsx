@@ -19,6 +19,9 @@ const Reportes = () => {
     const [modalInsumo, setModalInsumo] = useState(null);
     const { isSidebarOpen } = useSidebar();
     const [selectedInsumo, setSelectedInsumo] = useState(null);
+    const [activeTab, setActiveTab] = useState('criticos');
+    const [modalType, setModalType] = useState(null);
+    const [selectedMovimiento, setSelectedMovimiento] = useState(null);
 
     const fetchData = async () => {
         setLoading(true);
@@ -131,19 +134,17 @@ const Reportes = () => {
         autoTable(doc, {
             ...tableOptions,
             startY: finalY + 5,
-            head: [header],
+            head: [["ID", "Nombre", "Cantidad", "Estado"]],
             headStyles: { fillColor: [0, 0, 255] },
-            body: insumosEnMantenimiento.map(insumo => [
-                insumo.id_insumo,
-                insumo.nombre,
-                insumo.descripcion,
-                insumo.ubicacion,
-                insumo.tipo,
-                insumo.unidad_medida,
-                insumo.stock_actual,
-                insumo.stock_minimo,
-                insumo.estado
-            ])
+            body: insumosEnMantenimiento.map(insumo => {
+                const insumoCompleto = insumos.find(i => i.id_insumo === insumo.id_insumo);
+                return [
+                    insumo.id_insumo,
+                    insumoCompleto ? insumoCompleto.nombre : 'No especificado',
+                    insumo.cantidad,
+                    "En Mantenimiento"
+                ];
+            })
         });
 
         finalY = doc.lastAutoTable.finalY + 10;
@@ -161,7 +162,7 @@ const Reportes = () => {
             <div className={`flex-1 p-4 md:p-6 bg-white shadow-xl rounded-xl mt-20 lg:mt-0 transition-all duration-300 ${isSidebarOpen ? 'lg:ml-60' : 'lg:ml-20'}`}>
                 <h2 className="text-xl md:text-2xl font-bold text-black mb-8">Reportes de Insumos</h2>
 
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center sm:space-x-6 space-y-4 sm:space-y-0 mt-6">
+                <div className="flex flex-col sm:flex-row items-start justify-start gap-6 mt-6">
                     <Card
                         title="Atención Requerida"
                         value={insumosCriticos.length}
@@ -176,194 +177,151 @@ const Reportes = () => {
                     />
                 </div>
 
-                <h2 className="mt-8 text-2xl font-semibold text-[#592644]">Insumos Críticos y en Mantenimiento</h2>
-                <button
-                    onClick={generarPDF}
-                    className="mt-6 w-full sm:w-[250px] flex items-center justify-center gap-2 bg-[#592644] hover:bg-[#4b1f3d] text-white font-semibold py-3 px-5 rounded-2xl shadow-lg transition-transform transform hover:scale-105 duration-300 ease-in-out"
-                >
-                    <i className="fa fa-file-pdf text-xl"></i>
-                    <span className="text-sm sm:text-base">Generar Reporte PDF</span>
-                </button>
+                <div className="mt-8 flex flex-col space-y-6">
+                    <div className="flex justify-start space-x-4">
+                        <button
+                            onClick={() => setActiveTab('criticos')}
+                            className={`px-6 py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 ${
+                                activeTab === 'criticos'
+                                    ? 'bg-[#592644] text-white shadow-lg'
+                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                            }`}
+                        >
+                            Insumos Críticos
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('mantenimiento')}
+                            className={`px-6 py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 ${
+                                activeTab === 'mantenimiento'
+                                    ? 'bg-[#592644] text-white shadow-lg'
+                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                            }`}
+                        >
+                            Insumos en Mantenimiento
+                        </button>
+                    </div>
 
-                <div className="bg-white p-4 sm:p-8 mt-6 rounded-lg overflow-y-auto max-h-[70vh]">
-                    {loading ? (
-                        <SkeletonReportes />
-                    ) : error ? (
-                        <div className="text-red-600">
-                            <p>Error al cargar los insumos: {error}</p>
-                            <button
-                                onClick={fetchData}
-                                className="mt-4 bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600 transition-all duration-300"
-                            >
-                                Reintentar
-                            </button>
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {insumosEnMantenimiento.map((insumo) => {
-                                const insumoCompleto = insumos.find(i => i.id_insumo === insumo.id_insumo);
-                                if (!insumoCompleto) return null;
+                    <button
+                        onClick={generarPDF}
+                        className="w-full sm:w-[250px] flex items-center justify-center gap-2 bg-[#592644] hover:bg-[#4b1f3d] text-white font-semibold py-3 px-5 rounded-2xl shadow-lg transition-transform transform hover:scale-105 duration-300 ease-in-out"
+                    >
+                        <i className="fa fa-file-pdf text-xl"></i>
+                        <span className="text-sm sm:text-base">Generar Reporte PDF</span>
+                    </button>
 
-                                return (
-                                    <div
-                                        key={insumo.id_insumo}
-                                        className="p-4 rounded-lg shadow-md relative bg-blue-50 border-l-4 border-blue-600 transform transition-all duration-300 hover:scale-105"
-                                    >
-                                        <span className="absolute top-0 right-0 inline-block px-3 py-1 text-xs font-semibold rounded-tr-lg rounded-bl-lg bg-blue-100 text-blue-800">
-                                            EN MANTENIMIENTO
-                                        </span>
-                                        <h3 className="text-lg font-bold mb-2 text-blue-800">
-                                            {insumoCompleto.nombre}
-                                        </h3>
-                                        <p className="text-sm mb-4 text-blue-700">
-                                            {insumoCompleto.descripcion || "Sin descripción"}
-                                        </p>
-
-                                        <div className="flex justify-between mb-4">
-                                            <div className="text-center">
-                                                <span className="block text-2xl font-bold text-blue-800">
-                                                    {insumo.cantidad}
-                                                </span>
-                                                <span className="text-xs text-blue-600">
-                                                    Cantidad en Mantenimiento
-                                                </span>
-                                            </div>
-                                            <div className="text-center">
-                                                <span className="block text-2xl font-bold text-blue-800">
-                                                    {insumoCompleto.stock_actual}
-                                                </span>
-                                                <span className="text-xs text-blue-600">
-                                                    Stock Disponible
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        <button
-                                            onClick={() => setModalInsumo(insumoCompleto)}
-                                            className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
+                    <div className="bg-white p-4 sm:p-8 rounded-lg overflow-y-auto max-h-[70vh]">
+                        {loading ? (
+                            <SkeletonReportes />
+                        ) : error ? (
+                            <div className="text-red-600">
+                                <p>Error al cargar los insumos: {error}</p>
+                                <button
+                                    onClick={fetchData}
+                                    className="mt-4 bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600 transition-all duration-300"
+                                >
+                                    Reintentar
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {activeTab === 'criticos' ? (
+                                    insumosCriticos.map((insumo) => (
+                                        <div
+                                            key={insumo.id_insumo}
+                                            className="p-4 rounded-lg shadow-md relative bg-red-50 border-l-4 border-red-600 transform transition-all duration-300 hover:scale-105"
                                         >
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                            </svg>
-                                            Ver Detalles
-                                        </button>
-                                    </div>
-                                );
-                            })}
+                                            <span className="absolute top-0 right-0 inline-block px-3 py-1 text-xs font-semibold rounded-tr-lg rounded-bl-lg bg-red-100 text-red-800">
+                                                CRÍTICO
+                                            </span>
+                                            <h3 className="text-lg font-bold mb-2 text-red-800">
+                                                {insumo.nombre}
+                                            </h3>
+                                            <p className="text-sm mb-4 text-red-700">
+                                                {insumo.descripcion || "Sin descripción"}
+                                            </p>
 
-                            {insumosCriticos.map((insumo) => {
-                                const disponibilidadActual = parseInt(insumo.stock_actual);
-                                const disponibilidadMinima = parseInt(insumo.stock_minimo);
-                                const isSinDisponibilidad = disponibilidadActual === 0;
-
-                                return (
-                                    <div
-                                        key={insumo.id_insumo}
-                                        className={`p-4 rounded-lg shadow-md relative transform transition-all duration-300 hover:scale-105 ${
-                                            isSinDisponibilidad
-                                                ? "bg-red-50 border-l-4 border-red-600"
-                                                : "bg-yellow-50 border-l-4 border-yellow-500"
-                                        }`}
-                                    >
-                                        <span className={`absolute top-0 right-0 inline-block px-3 py-1 text-xs font-semibold rounded-tr-lg rounded-bl-lg ${
-                                            isSinDisponibilidad
-                                                ? "bg-red-100 text-red-800"
-                                                : "bg-yellow-100 text-yellow-800"
-                                        }`}>
-                                            {isSinDisponibilidad ? "SIN DISPONIBILIDAD" : "DISPONIBILIDAD BAJA"}
-                                        </span>
-                                        <h3 className={`text-lg font-bold mb-2 ${
-                                            isSinDisponibilidad ? "text-red-800" : "text-yellow-800"
-                                        }`}>
-                                            {insumo.nombre}
-                                        </h3>
-                                        <p className={`text-sm mb-4 ${
-                                            isSinDisponibilidad ? "text-red-700" : "text-yellow-700"
-                                        }`}>
-                                            {insumo.descripcion || "Sin descripción"}
-                                        </p>
-
-                                        <div className="flex justify-between mb-4">
-                                            <div className="text-center">
-                                                <span className={`block text-2xl font-bold ${
-                                                    isSinDisponibilidad ? "text-red-800" : "text-yellow-800"
-                                                }`}>
-                                                    {insumo.stock_actual}
-                                                </span>
-                                                <span className={`text-xs ${
-                                                    isSinDisponibilidad ? "text-red-600" : "text-yellow-600"
-                                                }`}>
-                                                    Disponibilidad Actual
-                                                </span>
+                                            <div className="flex justify-between mb-4">
+                                                <div className="text-center">
+                                                    <span className="block text-2xl font-bold text-red-800">
+                                                        {insumo.stock_actual}
+                                                    </span>
+                                                    <span className="text-xs text-red-600">
+                                                        Stock Actual
+                                                    </span>
+                                                </div>
+                                                <div className="text-center">
+                                                    <span className="block text-2xl font-bold text-red-800">
+                                                        {insumo.stock_minimo}
+                                                    </span>
+                                                    <span className="text-xs text-red-600">
+                                                        Stock Mínimo
+                                                    </span>
+                                                </div>
                                             </div>
-                                            <div className="text-center">
-                                                <span className={`block text-2xl font-bold ${
-                                                    isSinDisponibilidad ? "text-red-800" : "text-yellow-800"
-                                                }`}>
-                                                    {insumo.stock_minimo}
-                                                </span>
-                                                <span className={`text-xs ${
-                                                    isSinDisponibilidad ? "text-red-600" : "text-yellow-600"
-                                                }`}>
-                                                    Disponibilidad Mínima
-                                                </span>
-                                            </div>
+
+                                            <button
+                                                onClick={() => setModalInsumo(insumo)}
+                                                className="w-full py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
+                                            >
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                </svg>
+                                                Ver Detalles
+                                            </button>
                                         </div>
+                                    ))
+                                ) : (
+                                    <>
+                                        {insumosEnMantenimiento.map((insumo) => {
+                                            const insumoCompleto = insumos.find(i => i.id_insumo === insumo.id_insumo);
+                                            if (!insumoCompleto) return null;
 
-                                        <button
-                                            onClick={() => setModalInsumo(insumo)}
-                                            className={`w-full py-2 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2 ${
-                                                isSinDisponibilidad
-                                                    ? "bg-red-600 hover:bg-red-700 text-white"
-                                                    : "bg-yellow-600 hover:bg-yellow-700 text-white"
-                                            }`}
-                                        >
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                            </svg>
-                                            Ver Detalles
-                                        </button>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    )}
+                                            return (
+                                                <div
+                                                    key={insumo.id_insumo}
+                                                    className="p-4 rounded-lg shadow-md relative bg-blue-50 border-l-4 border-blue-600 transform transition-all duration-300 hover:scale-105"
+                                                >
+                                                    <span className="absolute top-0 right-0 inline-block px-3 py-1 text-xs font-semibold rounded-tr-lg rounded-bl-lg bg-blue-100 text-blue-800">
+                                                        EN MANTENIMIENTO
+                                                    </span>
+                                                    <h3 className="text-lg font-bold mb-2 text-blue-800">
+                                                        {insumoCompleto.nombre}
+                                                    </h3>
+                                                    <p className="text-sm mb-4 text-blue-700">
+                                                        {insumoCompleto.descripcion || "Sin descripción"}
+                                                    </p>
+
+                                                    <div className="flex justify-between mb-4">
+                                                        <div className="text-center">
+                                                            <span className="block text-2xl font-bold text-blue-800">
+                                                                {insumo.cantidad}
+                                                            </span>
+                                                            <span className="text-xs text-blue-600">
+                                                                Cantidad en Mantenimiento
+                                                            </span>
+                                                        </div>
+                                                        <div className="text-center">
+                                                            <span className="block text-2xl font-bold text-blue-800">
+                                                                {insumoCompleto.stock_actual}
+                                                            </span>
+                                                            <span className="text-xs text-blue-600">
+                                                                Stock Disponible
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </>
+                                )}
+                            </div>
+                        )}
+                    </div>
                 </div>
 
-                {/* Sección de Insumos en Mantenimiento */}
-                {insumosEnMantenimiento.length > 0 && (
-                    <div className="mt-8">
-                        <h2 className="text-2xl font-semibold text-[#592644] mb-4">Insumos en Mantenimiento</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {insumosEnMantenimiento.map((insumo) => (
-                                <div key={`mantenimiento-${insumo.id_insumo}`} className="bg-blue-50 p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow">
-                                    <div className="flex justify-between items-start">
-                                        <div>
-                                            <h3 className="font-semibold text-blue-800">{insumo.nombre}</h3>
-                                            <p className="text-blue-600 mt-1">
-                                                En mantenimiento: <span className="font-bold">{insumo.cantidad_mantenimiento}</span>
-                                            </p>
-                                        </div>
-                                        <button
-                                            onClick={() => handleVerDetalles(insumo)}
-                                            className="text-blue-600 hover:text-blue-800 transition-colors"
-                                        >
-                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                            </svg>
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {/* Sección de Historial de Mantenimientos */}
-                {historialMantenimientos.length > 0 && (
+                {/* Sección de Historial de Mantenimientos - Solo visible cuando se muestran insumos en mantenimiento */}
+                {activeTab === 'mantenimiento' && historialMantenimientos.length > 0 && (
                     <div className="mt-8">
                         <h2 className="text-2xl font-semibold text-[#592644] mb-4">Historial de Mantenimientos</h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -464,6 +422,42 @@ const Reportes = () => {
                                     Cerrar
                                 </button>
                             </div>
+
+                            {modalType === 'movimiento' && selectedMovimiento && (
+                                <>
+                                    <div className="absolute top-6 right-6 bg-gray-100 px-4 py-1 rounded-full font-semibold text-base shadow-lg text-[#592644]">
+                                        EN MANTENIMIENTO
+                                    </div>
+
+                                    <div className="text-center mb-6 mt-4">
+                                        <h2 className="text-2xl font-bold text-black mb-2 text-[#592644]">
+                                            {selectedMovimiento.insumo_nombre || 'Insumo no especificado'}
+                                        </h2>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-6 mb-8">
+                                        <div className="bg-gray-200 rounded-2xl p-4 text-center shadow-lg">
+                                            <p className="font-bold text-base mb-2 text-[#592644]">CANTIDAD</p>
+                                            <p className="text-3xl font-bold text-blue-600">
+                                                {selectedMovimiento.cantidad}
+                                            </p>
+                                        </div>
+                                        <div className="bg-gray-200 rounded-2xl p-4 text-center shadow-lg">
+                                            <p className="font-bold text-base mb-2 text-[#592644]">TIPO</p>
+                                            <p className="text-2xl font-bold text-[#592644]">
+                                                {insumos.find(i => i.id_insumo === selectedMovimiento.id_insumo)?.tipo || 'No especificado'}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-gray-100 rounded-2xl p-4 mb-6">
+                                        <p className="font-bold text-base mb-2 text-[#592644]">UNIDAD DE MEDIDA</p>
+                                        <p className="text-lg text-gray-700">
+                                            {insumos.find(i => i.id_insumo === selectedMovimiento.id_insumo)?.unidad_medida || 'No especificado'}
+                                        </p>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
                 )}

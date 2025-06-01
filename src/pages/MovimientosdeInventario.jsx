@@ -118,7 +118,7 @@ const MovimientosDeInventario = () => {
                     acc[solicitudId] = {
                         id_solicitud: solicitudId,
                         fecha: movimiento.fecha_entregado,
-                        solicitante: movimiento.solicitante || movimiento.nombre_solicitante || 'Sistema',
+                        solicitante: movimiento.solicitante || movimiento.nombre_solicitante || 'No especificado',
                         movimientos: []
                     };
                 }
@@ -303,7 +303,6 @@ const MovimientosDeInventario = () => {
                                 })}
                             </span>
                         </div>
-                        <h3 className="text-xl font-bold text-[#592644]">{solicitud.solicitante}</h3>
                     </div>
                     <button
                         onClick={() => handleViewSolicitud(solicitud)}
@@ -370,7 +369,7 @@ const MovimientosDeInventario = () => {
     );
 
     const renderResumen = () => (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
                 <h3 className="text-lg font-semibold text-[#592644] mb-2">Total Préstamos</h3>
                 <p className="text-2xl font-bold text-red-600">{resumen.totalPrestamos}</p>
@@ -380,37 +379,18 @@ const MovimientosDeInventario = () => {
                 <p className="text-2xl font-bold text-green-600">{resumen.totalDevoluciones}</p>
             </div>
             <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                <h3 className="text-lg font-semibold text-[#592644] mb-2">Insumos más Prestados</h3>
-                <ul className="space-y-2">
+                <h3 className="text-lg font-semibold text-[#592644] mb-2">Top 3 Insumos más Prestados</h3>
+                <ul className="space-y-3">
                     {resumen.insumosMasPrestados.map((insumo, index) => (
-                        <li key={index} className="flex justify-between items-center">
-                            <span className="text-gray-600">{insumo.nombre}</span>
-                            <div className="flex items-center gap-2">
-                                <span className="font-semibold text-red-600 bg-red-50 px-2 py-1 rounded">
-                                    {insumo.prestamos}
-                                </span>
-                                <span className="text-xs text-gray-500">
-                                    ({insumo.devoluciones} dev.)
-                                </span>
-                            </div>
-                        </li>
-                    ))}
-                </ul>
-            </div>
-            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                <h3 className="text-lg font-semibold text-[#592644] mb-2">Insumos más Movimientos</h3>
-                <ul className="space-y-2">
-                    {resumen.insumosMasMovimientos.map((insumo, index) => (
-                        <li key={index} className="flex justify-between items-center">
-                            <span className="text-gray-600">{insumo.nombre}</span>
-                            <div className="flex items-center gap-2">
-                                <span className="font-semibold text-[#592644] bg-gray-50 px-2 py-1 rounded">
-                                    {insumo.prestamos + insumo.devoluciones}
-                                </span>
-                                <span className="text-xs text-gray-500">
-                                    ({insumo.total > 0 ? '+' : ''}{insumo.total})
-                                </span>
-                            </div>
+                        <li key={index} className="flex items-center gap-3">
+                            <span className={`flex items-center justify-center w-6 h-6 rounded-full font-bold text-white ${
+                                index === 0 ? 'bg-yellow-500' : 
+                                index === 1 ? 'bg-gray-400' : 
+                                'bg-amber-600'
+                            }`}>
+                                {index + 1}
+                            </span>
+                            <span className="text-gray-800 font-medium">{insumo.nombre}</span>
                         </li>
                     ))}
                 </ul>
@@ -525,7 +505,7 @@ const MovimientosDeInventario = () => {
 
                 {/* Modal de Detalles */}
                 {modalVisible && (
-                    <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
+                    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex justify-center items-center z-50">
                         <div className="bg-white rounded-[2rem] w-[95vw] max-w-2xl p-8 relative shadow-2xl">
                             {modalType === 'movimiento' && selectedMovimiento && (
                                 <>
@@ -562,11 +542,6 @@ const MovimientosDeInventario = () => {
                                             </p>
                                         </div>
                                     </div>
-
-                                    <div className="bg-gray-100 rounded-2xl p-4 mb-6">
-                                        <p className="font-bold text-base mb-2 text-[#592644]">SOLICITANTE</p>
-                                        <p className="text-lg text-gray-700">{selectedMovimiento.solicitante || 'Sistema'}</p>
-                                    </div>
                                 </>
                             )}
 
@@ -577,9 +552,6 @@ const MovimientosDeInventario = () => {
                                     </div>
 
                                     <div className="text-center mb-6 mt-4">
-                                        <h2 className="text-2xl font-bold text-black mb-2 text-[#592644]">
-                                            {selectedSolicitud.solicitante}
-                                        </h2>
                                         <p className="text-sm text-gray-600">
                                             {new Date(selectedSolicitud.fecha).toLocaleDateString('es-ES', {
                                                 day: '2-digit',

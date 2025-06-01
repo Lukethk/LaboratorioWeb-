@@ -6,7 +6,7 @@ import FormularioPDF from '../components/FormularioPDF';
 import axios from 'axios';
 import { EyeIcon } from "lucide-react";
 import { useSidebar } from "../context/SidebarContext";
-const API_URL = "https://universidad-la9h.onrender.com";
+const API_URL = "http://localhost:3000";
 
 const Solicitudes = () => {
     const [solicitudes, setSolicitudes] = useState([]);
@@ -29,33 +29,53 @@ const Solicitudes = () => {
         unidad: "",
         responsable: "",
         fecha: "",
+        observaciones: "",
     });
     const [items, setItems] = useState([]);
     const [mensaje, setMensaje] = useState(null);
     const { isSidebarOpen } = useSidebar();
     const notifiedSolicitudesEstudiante = useRef(new Set(JSON.parse(localStorage.getItem('notifiedSolicitudesEstudiante') || '[]')));
+    const [error, setError] = useState(null);
 
     const fetchSolicitudes = async () => {
         try {
+            console.log('Iniciando fetchSolicitudes...');
+            console.log('URL de la API:', `${API_URL}/solicitudes`);
+            
             const res = await fetch(`${API_URL}/solicitudes`);
-            if (!res.ok) throw new Error("Error al obtener solicitudes");
+            console.log('Respuesta de la API:', res);
+            
+            if (!res.ok) {
+                console.error('Error en la respuesta:', res.status, res.statusText);
+                setError(`Error al obtener solicitudes: ${res.status} ${res.statusText}`);
+                throw new Error(`Error al obtener solicitudes: ${res.status} ${res.statusText}`);
+            }
+            
             const data = await res.json();
-            // Notificar nuevas solicitudes de estudiante
-            data.forEach(solicitud => {
-                if (solicitud.estado === 'Pendiente' && !notifiedSolicitudesEstudiante.current.has(solicitud.id_solicitud)) {
-                    addNotification({
-                        type: 'solicitud_estudiante',
-                        title: 'Nueva Solicitud de Estudiante',
-                        message: `Nueva solicitud: ${solicitud.nombre_solicitud}`,
-                        timestamp: new Date()
-                    });
-                    notifiedSolicitudesEstudiante.current.add(solicitud.id_solicitud);
-                    localStorage.setItem('notifiedSolicitudesEstudiante', JSON.stringify(Array.from(notifiedSolicitudesEstudiante.current)));
-                }
-            });
-            setSolicitudes(data);
+            console.log('Datos recibidos:', data);
+            
+            if (!Array.isArray(data)) {
+                console.error('Los datos recibidos no son un array:', data);
+                setError('Formato de datos inválido');
+                return;
+            }
+
+            // Mapear los datos para asegurar que tengan el formato correcto
+            const solicitudesFormateadas = data.map(solicitud => ({
+                id_solicitud: solicitud.id_solicitud,
+                nombre_solicitud: solicitud.nombre_solicitud || '',
+                estado: solicitud.estado || 'Pendiente',
+                cantidad_solicitada: solicitud.cantidad_solicitada || 0,
+                observaciones: solicitud.observaciones || '',
+                fecha_creacion: solicitud.fecha_creacion || new Date().toISOString()
+            }));
+            
+            setSolicitudes(solicitudesFormateadas);
+            setError(null);
         } catch (e) {
-            console.error(e);
+            console.error('Error detallado:', e);
+            setError(`Error al cargar las solicitudes: ${e.message}`);
+            alert('Error al cargar las solicitudes. Por favor, verifica la consola para más detalles.');
         }
     };
 
@@ -97,7 +117,7 @@ const Solicitudes = () => {
     useEffect(() => {
         fetchSolicitudes();
         fetchInsumos();
-    }, []);
+    }, [error]);
 
     const getEstado = (i) => {
         const actual = parseInt(i.stock_actual);
@@ -116,7 +136,7 @@ const Solicitudes = () => {
     const openCreateModal = () => {
         const criticos = insumos.filter((i) => getEstado(i) === "Stock Bajo");
         setItems([]);
-        setHeader({ unidad: "", responsable: "", fecha: "" });
+        setHeader({ unidad: "", responsable: "", fecha: "", observaciones: "" });
         setModalOpen(true);
     };
 
@@ -176,7 +196,7 @@ const Solicitudes = () => {
             nombre_solicitud: header.unidad,
             cantidad_solicitada: items.reduce((acc, item) => acc + item.cantidad, 0),
             estado: "Pendiente",
-            observaciones: header.responsable || '',
+            observaciones: header.observaciones || '',
         };
 
         try {
@@ -187,6 +207,7 @@ const Solicitudes = () => {
                     unidadSolicitante: header.unidad,
                     fecha: header.fecha,
                     responsable: header.responsable,
+                    observaciones: header.observaciones,
                     items: items.map(it => ({
                         cantidad: it.cantidad,
                         descripcion: it.nombre,
@@ -267,6 +288,17 @@ const Solicitudes = () => {
         }
     };
 
+    // Agregar un componente para mostrar errores
+    const ErrorMessage = () => {
+        if (!error) return null;
+        return (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+                <strong className="font-bold">Error: </strong>
+                <span className="block sm:inline">{error}</span>
+            </div>
+        );
+    };
+
     return (
         <div className="flex flex-col lg:flex-row h-screen">
             <Sidebar className="hidden lg:block" />
@@ -281,6 +313,8 @@ const Solicitudes = () => {
                         Crear una Solicitud
                     </button>
                 </div>
+
+                <ErrorMessage />
 
                 <div className="flex gap-2 mb-8">
                     {["Pendientes", "Completas"].map((opt) => (
@@ -533,6 +567,17 @@ const Solicitudes = () => {
                                             required
                                         />
                                     </div>
+                                </div>
+
+                                <div className="mt-4">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Observaciones</label>
+                                    <textarea
+                                        value={header.observaciones || ''}
+                                        onChange={(e) => setHeader(prev => ({ ...prev, observaciones: e.target.value }))}
+                                        className="w-full border p-2 rounded-md"
+                                        rows="3"
+                                        placeholder="Ingrese observaciones adicionales..."
+                                    />
                                 </div>
 
                                 <div className="mt-6">
