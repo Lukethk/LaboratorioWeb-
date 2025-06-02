@@ -1,20 +1,16 @@
 import React, { useState, useEffect, useRef } from "react";
 import Sidebar from "../components/Sidebar.jsx";
 import { PencilIcon, XMarkIcon, PlusIcon } from '@heroicons/react/24/solid';
-import { pdf, PDFDownloadLink } from "@react-pdf/renderer";
-import FormularioPDF from '../components/FormularioPDF';
 import axios from 'axios';
 import { EyeIcon } from "lucide-react";
 import { useSidebar } from "../context/SidebarContext";
-const API_URL = "http://localhost:3000";
+const API_URL = "https://universidad-la9h.onrender.com";
 
 const Solicitudes = () => {
     const [solicitudes, setSolicitudes] = useState([]);
     const [insumos, setInsumos] = useState([]);
     const [filter, setFilter] = useState("Pendientes");
     const [modalOpen, setModalOpen] = useState(false);
-    const [descargarPDF, setDescargarPDF] = useState(false);
-    const [formData, setFormData] = useState(null);
     const [confirmModalOpen, setConfirmModalOpen] = useState(false);
     const [estadoPendiente, setEstadoPendiente] = useState(null);
     const [selectedSolicitud, setSelectedSolicitud] = useState(null);
@@ -30,6 +26,8 @@ const Solicitudes = () => {
         responsable: "",
         fecha: "",
         observaciones: "",
+        centroCosto: "",
+        justificacion: ""
     });
     const [items, setItems] = useState([]);
     const [mensaje, setMensaje] = useState(null);
@@ -136,7 +134,7 @@ const Solicitudes = () => {
     const openCreateModal = () => {
         const criticos = insumos.filter((i) => getEstado(i) === "Stock Bajo");
         setItems([]);
-        setHeader({ unidad: "", responsable: "", fecha: "", observaciones: "" });
+        setHeader({ unidad: "", responsable: "", fecha: "", observaciones: "", centroCosto: "", justificacion: "" });
         setModalOpen(true);
     };
 
@@ -189,6 +187,51 @@ const Solicitudes = () => {
         setTimeout(() => setMensaje(null), 3000);
     };
 
+    // Función para convertir número a letras (simplificada para Bs)
+    function numeroALetras(num) {
+        const unidades = ['','uno','dos','tres','cuatro','cinco','seis','siete','ocho','nueve'];
+        const decenas = ['','diez','veinte','treinta','cuarenta','cincuenta','sesenta','setenta','ochenta','noventa'];
+        const centenas = ['','cien','doscientos','trescientos','cuatrocientos','quinientos','seiscientos','setecientos','ochocientos','novecientos'];
+        if (num === 0) return 'CERO BOLIVIANOS';
+        if (num > 999999) return num + ' BOLIVIANOS'; // simplificado para montos grandes
+        let n = Math.floor(num);
+        let c = Math.floor(n / 100000);
+        let resto = n % 100000;
+        let texto = '';
+        if (c > 0) texto += unidades[c] + 'cientos ';
+        let d = Math.floor(resto / 10000);
+        resto = resto % 10000;
+        if (d > 0) texto += decenas[d] + ' mil ';
+        let m = Math.floor(resto / 1000);
+        resto = resto % 1000;
+        if (m > 0) texto += unidades[m] + ' mil ';
+        let ce = Math.floor(resto / 100);
+        resto = resto % 100;
+        if (ce > 0) texto += centenas[ce] + ' ';
+        let de = Math.floor(resto / 10);
+        let u = resto % 10;
+        if (de > 0) texto += decenas[de] + ' ';
+        if (u > 0) texto += unidades[u] + ' ';
+        texto = texto.trim().toUpperCase() + ' BOLIVIANOS';
+        return texto;
+    }
+
+    async function downloadExcel(datos) {
+        const resp = await fetch('https://universidad-la9h.onrender.com/api/generar-excel', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(datos),
+        });
+        if (!resp.ok) throw new Error('Error generando Excel');
+        const blob = await resp.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'formcompras.xlsx';
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
     const handleCreatePDF = async (e) => {
         e.preventDefault();
 
@@ -199,25 +242,36 @@ const Solicitudes = () => {
             observaciones: header.observaciones || '',
         };
 
+        // Datos para el Excel
+        const montoTotal = items.reduce((acc, item) => acc + item.valorTotal, 0);
+        const datosExcel = {
+            unidadSolicitante: header.unidad,
+            centroCosto: header.centroCosto,
+            responsable: header.responsable,
+            fechaEmision: header.fecha ? {
+                dia: parseInt(header.fecha.split('-')[2]),
+                mes: parseInt(header.fecha.split('-')[1]),
+                anio: parseInt(header.fecha.split('-')[0])
+            } : { dia: 1, mes: 1, anio: 2024 },
+            destinoJustificacion: header.justificacion,
+            observaciones: header.observaciones || "",
+            montoTotal: montoTotal,
+            montoLetras: numeroALetras(montoTotal),
+            insumos: items.map(it => ({
+                cantidad: it.cantidad,
+                unidad: it.unidad_medida,
+                descripcion: it.nombre,
+                pu: it.precio,
+                total: it.valorTotal
+            }))
+        };
+
         try {
             const response = await axios.post(`${API_URL}/solicitudes`, solicitudData);
-
             if (response.status === 201) {
-                setFormData({
-                    unidadSolicitante: header.unidad,
-                    fecha: header.fecha,
-                    responsable: header.responsable,
-                    observaciones: header.observaciones,
-                    items: items.map(it => ({
-                        cantidad: it.cantidad,
-                        descripcion: it.nombre,
-                        pu: it.precio,
-                        total: it.valorTotal,
-                    })),
-                });
-
-                setDescargarPDF(true);
                 setModalOpen(false);
+                // Generar y descargar el Excel
+                await downloadExcel(datosExcel);
             } else {
                 alert("Error al guardar la solicitud.");
             }
@@ -226,28 +280,6 @@ const Solicitudes = () => {
             alert("Hubo un problema al guardar la solicitud. Por favor, intentalo nuevamente.");
         }
     };
-
-    useEffect(() => {
-        if (descargarPDF && formData) {
-            const doc = <FormularioPDF data={formData} />;
-            const blobPromise = pdf(doc).toBlob();
-
-            blobPromise.then(blob => {
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `Solicitud_${formData.fecha || 'sin_fecha'}.pdf`;
-                a.click();
-                URL.revokeObjectURL(url);
-
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1000);
-            });
-
-            setDescargarPDF(false);
-        }
-    }, [descargarPDF, formData]);
 
     const handleEdit = (s) => {
         setEditSolicitud({
@@ -564,6 +596,30 @@ const Solicitudes = () => {
                                             value={header.fecha}
                                             onChange={(e) => setHeader(prev => ({ ...prev, fecha: e.target.value }))}
                                             className="w-full border p-2 rounded-md"
+                                            required
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Centro de Costo</label>
+                                        <input
+                                            type="text"
+                                            value={header.centroCosto}
+                                            onChange={(e) => setHeader(prev => ({ ...prev, centroCosto: e.target.value }))}
+                                            className="w-full border p-2 rounded-md"
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Destino/Justificación</label>
+                                        <textarea
+                                            value={header.justificacion}
+                                            onChange={(e) => setHeader(prev => ({ ...prev, justificacion: e.target.value }))}
+                                            className="w-full border p-2 rounded-md"
+                                            rows="2"
+                                            placeholder="Ingrese el destino o justificación..."
                                             required
                                         />
                                     </div>

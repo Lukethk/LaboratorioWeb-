@@ -353,6 +353,23 @@ const Alumnos = () => {
         </button>
     );
 
+    // Agregar función para descargar el Excel de la solicitud de estudiante
+    const downloadExcelSolicitud = async (id) => {
+        try {
+            const resp = await fetch(`https://universidad-la9h.onrender.com/excel/solicitudes-estudiantes/${id}/excel`);
+            if (!resp.ok) throw new Error('Error al descargar el Excel');
+            const blob = await resp.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `solicitud-estudiante-${id}.xlsx`;
+            a.click();
+            URL.revokeObjectURL(url);
+        } catch (e) {
+            alert('No se pudo descargar el Excel.');
+        }
+    };
+
     return (
         <div className="flex h-screen bg-gray-50">
             <Sidebar />
@@ -493,6 +510,18 @@ const Alumnos = () => {
                                                         </svg>
                                                         Ver detalles
                                                     </button>
+                                                    {solicitud.estado === 'Completada' && (
+                                                        <button
+                                                            onClick={() => downloadExcelSolicitud(solicitud.id_solicitud)}
+                                                            className="ml-2 px-4 py-2 bg-[#592644] text-white rounded hover:bg-[#4b1f3d] text-sm font-semibold flex items-center"
+                                                            title="Descargar Excel"
+                                                        >
+                                                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
+                                                            </svg>
+                                                            Imprimir Formulario
+                                                        </button>
+                                                    )}
                                                     {solicitud.estado === 'Pendiente' && (
                                                         <div className="flex gap-2">
                                                             <ActionButton
@@ -534,9 +563,6 @@ const Alumnos = () => {
                                                             bgColor="bg-blue-500"
                                                             hoverColor="hover:bg-blue-600"
                                                         />
-                                                    )}
-                                                    {solicitud.estado === 'Completada' && (
-                                                        <FormularioEstudiantes solicitud={solicitud} />
                                                     )}
                                                 </div>
                                             </div>
@@ -635,9 +661,6 @@ const Alumnos = () => {
                                         >
                                             Cerrar
                                         </button>
-                                        {selectedSolicitud.estado === 'Completada' && (
-                                            <FormularioEstudiantes solicitud={selectedSolicitud} />
-                                        )}
                                     </div>
                                 </>
                             )}
