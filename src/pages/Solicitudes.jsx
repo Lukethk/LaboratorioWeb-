@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import Sidebar from "../components/Sidebar.jsx";
 import { PencilIcon, XMarkIcon, PlusIcon } from '@heroicons/react/24/solid';
+import { pdf, PDFDownloadLink } from "@react-pdf/renderer";
+import FormularioPDF from '../components/FormularioPDF';
 import axios from 'axios';
 import { EyeIcon } from "lucide-react";
 import { useSidebar } from "../context/SidebarContext";
@@ -11,6 +13,8 @@ const Solicitudes = () => {
     const [insumos, setInsumos] = useState([]);
     const [filter, setFilter] = useState("Pendientes");
     const [modalOpen, setModalOpen] = useState(false);
+    const [descargarPDF, setDescargarPDF] = useState(false);
+    const [formData, setFormData] = useState(null);
     const [confirmModalOpen, setConfirmModalOpen] = useState(false);
     const [estadoPendiente, setEstadoPendiente] = useState(null);
     const [selectedSolicitud, setSelectedSolicitud] = useState(null);
@@ -216,22 +220,6 @@ const Solicitudes = () => {
         return texto;
     }
 
-    async function downloadExcel(datos) {
-        const resp = await fetch('https://universidad-la9h.onrender.com/api/generar-excel', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(datos),
-        });
-        if (!resp.ok) throw new Error('Error generando Excel');
-        const blob = await resp.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'formcompras.xlsx';
-        a.click();
-        URL.revokeObjectURL(url);
-    }
-
     const handleCreatePDF = async (e) => {
         e.preventDefault();
 
@@ -242,36 +230,31 @@ const Solicitudes = () => {
             observaciones: header.observaciones || '',
         };
 
-        // Datos para el Excel
-        const montoTotal = items.reduce((acc, item) => acc + item.valorTotal, 0);
-        const datosExcel = {
-            unidadSolicitante: header.unidad,
-            centroCosto: header.centroCosto,
-            responsable: header.responsable,
-            fechaEmision: header.fecha ? {
-                dia: parseInt(header.fecha.split('-')[2]),
-                mes: parseInt(header.fecha.split('-')[1]),
-                anio: parseInt(header.fecha.split('-')[0])
-            } : { dia: 1, mes: 1, anio: 2024 },
-            destinoJustificacion: header.justificacion,
-            observaciones: header.observaciones || "",
-            montoTotal: montoTotal,
-            montoLetras: numeroALetras(montoTotal),
-            insumos: items.map(it => ({
-                cantidad: it.cantidad,
-                unidad: it.unidad_medida,
-                descripcion: it.nombre,
-                pu: it.precio,
-                total: it.valorTotal
-            }))
-        };
-
         try {
             const response = await axios.post(`${API_URL}/solicitudes`, solicitudData);
+
             if (response.status === 201) {
+                setFormData({
+                    unidadSolicitante: header.unidad,
+                    fecha: header.fecha,
+                    responsable: header.responsable,
+                    centroCosto: header.centroCosto,
+                    justificacion: header.justificacion,
+                    observaciones: header.observaciones,
+                    items: items.map(it => ({
+                        cantidad: it.cantidad,
+                        unidad: it.unidad_medida || it.unidad || '',
+                        unidad_medida: it.unidad_medida || it.unidad || '',
+                        nombre: it.nombre,
+                        descripcion: it.descripcion,
+                        pu: it.precio,
+                        total: it.valorTotal,
+                    })),
+                    valorTotal: items.reduce((acc, item) => acc + item.valorTotal, 0).toFixed(2),
+                });
+
+                setDescargarPDF(true);
                 setModalOpen(false);
-                // Generar y descargar el Excel
-                await downloadExcel(datosExcel);
             } else {
                 alert("Error al guardar la solicitud.");
             }
@@ -280,6 +263,28 @@ const Solicitudes = () => {
             alert("Hubo un problema al guardar la solicitud. Por favor, intentalo nuevamente.");
         }
     };
+
+    useEffect(() => {
+        if (descargarPDF && formData) {
+            const doc = <FormularioPDF data={formData} />;
+            const blobPromise = pdf(doc).toBlob();
+
+            blobPromise.then(blob => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Solicitud_${formData.fecha || 'sin_fecha'}.pdf`;
+                a.click();
+                URL.revokeObjectURL(url);
+
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            });
+
+            setDescargarPDF(false);
+        }
+    }, [descargarPDF, formData]);
 
     const handleEdit = (s) => {
         setEditSolicitud({
@@ -557,86 +562,82 @@ const Solicitudes = () => {
                 )}
 
                 {modalOpen && (
-                    <div className="fixed inset-0 z-50 flex justify-center items-center">
-                        <div className="fixed inset-0 bg-white/30 backdrop-blur-sm" onClick={() => setModalOpen(false)} />
-                        <div className="relative z-50 bg-white p-6 rounded-xl w-full max-w-4xl mx-4 max-h-[80vh] overflow-y-auto shadow-lg animate-slideUpBounceIn">
-                            <div className="flex justify-between items-center mb-4">
-                                <h2 className="text-xl font-bold text-[#592644]">Crear Solicitud de Adquisición</h2>
+                    <div className="fixed inset-0 flex items-center justify-center bg-[#59264426] z-50">
+                        <div className="bg-white p-6 rounded-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+                            <div className="flex justify-between items-center mb-6">
+                                <h2 className="text-xl font-bold">Nueva Solicitud de Insumos</h2>
                                 <button onClick={() => setModalOpen(false)}>
-                                    <XMarkIcon className="w-6 h-6 text-gray-500 hover:text-red-500" />
+                                    <XMarkIcon className="w-6 h-6 text-gray-700 hover:text-red-500 transition" />
                                 </button>
                             </div>
 
-                            <form onSubmit={handleCreatePDF} className="space-y-4">
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Unidad</label>
+                            <form
+                                className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+                                onSubmit={handleCreatePDF}
+                            >
+                                {[{ label: "Unidad Solicitante", key: "unidad", type: "text" },
+                                    { label: "Responsable", key: "responsable", type: "text" },
+                                    { label: "Fecha", key: "fecha", type: "date" },
+                                    { label: "Centro de Costo", key: "centroCosto", type: "text" },
+                                    { label: "Justificación", key: "justificacion", type: "text" }].map(({ label, key, type }) => (
+                                    <div key={key} className="col-span-full">
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
                                         <input
-                                            type="text"
-                                            value={header.unidad}
-                                            onChange={(e) => setHeader(prev => ({ ...prev, unidad: e.target.value }))}
-                                            className="w-full border p-2 rounded-md"
+                                            type={type}
+                                            value={header[key]}
+                                            onChange={(e) => setHeader((h) => ({ ...h, [key]: e.target.value }))}
+                                            className="w-full border p-2 rounded"
                                             required
                                         />
                                     </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Responsable</label>
-                                        <input
-                                            type="text"
-                                            value={header.responsable}
-                                            onChange={(e) => setHeader(prev => ({ ...prev, responsable: e.target.value }))}
-                                            className="w-full border p-2 rounded-md"
-                                            required
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Fecha</label>
-                                        <input
-                                            type="date"
-                                            value={header.fecha}
-                                            onChange={(e) => setHeader(prev => ({ ...prev, fecha: e.target.value }))}
-                                            className="w-full border p-2 rounded-md"
-                                            required
-                                        />
+                                ))}
+
+                                <div className="col-span-full">
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Insumos Críticos</label>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-sm">
+                                            <thead className="bg-gray-100">
+                                            <tr>
+                                                <th className="px-2 py-1 border">Nombre</th>
+                                                <th className="px-2 py-1 border">Cantidad</th>
+                                                <th className="px-2 py-1 border">Precio Estimado</th>
+                                                <th className="px-2 py-1 border">Valor Total</th>
+                                                <th className="px-2 py-1 border">Acción</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody>
+                                            {items.map((it, idx) => (
+                                                <tr key={it.id} className="hover:bg-gray-50">
+                                                    <td className="px-2 py-1 border">{it.nombre}</td>
+                                                    <td className="px-2 py-1 border text-center">{it.cantidad}</td>
+                                                    <td className="px-2 py-1 border">
+                                                        <input
+                                                            type="number"
+                                                            step="0.01"
+                                                            className="w-full border p-1 rounded text-right"
+                                                            value={it.precio}
+                                                            onChange={(e) => handlePrecioChange(idx, e.target.value)}
+                                                            required
+                                                        />
+                                                    </td>
+                                                    <td className="px-2 py-1 border text-right">{it.valorTotal.toFixed(2)}</td>
+                                                    <td className="px-2 py-1 border">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleQuitarInsumo(idx)}
+                                                            className="text-red-500 hover:text-red-700"
+                                                        >
+                                                            <XMarkIcon className="w-5 h-5" />
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            </tbody>
+                                        </table>
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Centro de Costo</label>
-                                        <input
-                                            type="text"
-                                            value={header.centroCosto}
-                                            onChange={(e) => setHeader(prev => ({ ...prev, centroCosto: e.target.value }))}
-                                            className="w-full border p-2 rounded-md"
-                                            required
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Destino/Justificación</label>
-                                        <textarea
-                                            value={header.justificacion}
-                                            onChange={(e) => setHeader(prev => ({ ...prev, justificacion: e.target.value }))}
-                                            className="w-full border p-2 rounded-md"
-                                            rows="2"
-                                            placeholder="Ingrese el destino o justificación..."
-                                            required
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="mt-4">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Observaciones</label>
-                                    <textarea
-                                        value={header.observaciones || ''}
-                                        onChange={(e) => setHeader(prev => ({ ...prev, observaciones: e.target.value }))}
-                                        className="w-full border p-2 rounded-md"
-                                        rows="3"
-                                        placeholder="Ingrese observaciones adicionales..."
-                                    />
-                                </div>
-
-                                <div className="mt-6">
+                                <div className="col-span-full mt-6">
                                     <h3 className="text-lg font-semibold text-[#592644] mb-4">Insumos Críticos Disponibles</h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                                         {insumos
@@ -660,76 +661,54 @@ const Solicitudes = () => {
                                                 </div>
                                             ))}
                                     </div>
-
-                                    <h3 className="text-lg font-semibold text-[#592644] mb-4">Insumos Seleccionados ({items.length}/7)</h3>
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full text-sm">
-                                            <thead className="bg-gray-100">
-                                                <tr>
-                                                    <th className="px-2 py-1 border">Nombre</th>
-                                                    <th className="px-2 py-1 border">Unidad</th>
-                                                    <th className="px-2 py-1 border">Cantidad</th>
-                                                    <th className="px-2 py-1 border">Precio Estimado</th>
-                                                    <th className="px-2 py-1 border">Valor Total</th>
-                                                    <th className="px-2 py-1 border">Acción</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {items.map((item, index) => (
-                                                    <tr key={item.id}>
-                                                        <td className="px-2 py-1 border">{item.nombre}</td>
-                                                        <td className="px-2 py-1 border">{item.unidad_medida || ''}</td>
-                                                        <td className="px-2 py-1 border">
-                                                            <input
-                                                                type="number"
-                                                                value={item.cantidad}
-                                                                onChange={(e) => handleCantidadChange(index, e.target.value)}
-                                                                className="w-full border px-1"
-                                                                min="1"
-                                                            />
-                                                        </td>
-                                                        <td className="px-2 py-1 border">
-                                                            <input
-                                                                type="number"
-                                                                value={item.precio}
-                                                                onChange={(e) => handlePrecioChange(index, e.target.value)}
-                                                                className="w-full border px-1"
-                                                                min="0"
-                                                            />
-                                                        </td>
-                                                        <td className="px-2 py-1 border text-right">
-                                                            {item.valorTotal.toFixed(2)} Bs
-                                                        </td>
-                                                        <td className="px-2 py-1 border text-center">
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => handleEliminarInsumo(item.id)}
-                                                                className="text-red-500 hover:text-red-700"
-                                                            >
-                                                                <XMarkIcon className="w-5 h-5" />
-                                                            </button>
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
                                 </div>
 
-                                <div className="flex justify-end gap-4 mt-6">
+                                <div className="col-span-full flex justify-end space-x-2 mt-4">
                                     <button
                                         type="button"
                                         onClick={() => setModalOpen(false)}
-                                        className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-100"
+                                        className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
                                     >
                                         Cancelar
                                     </button>
-                                    <button
-                                        type="submit"
-                                        className="px-4 py-2 bg-[#592644] text-white rounded-md hover:bg-[#4b1f3d]"
-                                    >
-                                        Crear Solicitud
-                                    </button>
+
+                                    {items.length > 0 && (
+                                        <PDFDownloadLink
+                                            key={items.map(it => it.id).join('-')}
+                                            document={
+                                                <FormularioPDF
+                                                    data={{
+                                                        unidadSolicitante: header.unidad,
+                                                        fecha: header.fecha,
+                                                        responsable: header.responsable,
+                                                        centroCosto: header.centroCosto,
+                                                        justificacion: header.justificacion,
+                                                        observaciones: header.observaciones,
+                                                        items: items.map(it => ({
+                                                            cantidad: it.cantidad,
+                                                            unidad: it.unidad_medida || it.unidad || '',
+                                                            unidad_medida: it.unidad_medida || it.unidad || '',
+                                                            nombre: it.nombre,
+                                                            descripcion: it.nombre,
+                                                            pu: it.precio,
+                                                            total: it.valorTotal,
+                                                        })),
+                                                        valorTotal: items.reduce((acc, item) => acc + item.valorTotal, 0).toFixed(2),
+                                                    }}
+                                                />
+                                            }
+                                            fileName={`Solicitud_${header.fecha || 'sin_fecha'}.pdf`}
+                                        >
+                                            {({ loading }) => (
+                                                <button
+                                                    type="submit"
+                                                    className="px-4 py-2 bg-[#592644] text-white rounded hover:bg-[#4b1f3d]"
+                                                >
+                                                    {loading ? 'Generando…' : 'Guardar y Exportar PDF'}
+                                                </button>
+                                            )}
+                                        </PDFDownloadLink>
+                                    )}
                                 </div>
                             </form>
                         </div>

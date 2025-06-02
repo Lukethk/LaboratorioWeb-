@@ -1,4 +1,3 @@
-
 import {
     Page,
     Text,
@@ -99,7 +98,6 @@ export default function FormularioPDF({ data }) {
         fecha = '',
         centroCosto = '',
         responsable = '',
-        codigoInversion = '',
         justificacion = '',
         observaciones = '',
         items = [],
@@ -140,10 +138,7 @@ export default function FormularioPDF({ data }) {
                             <Text style={styles.label}>RESPONSABLE:</Text>
                             <Text style={styles.value}>{responsable}</Text>
                         </View>
-                        <View style={styles.row}>
-                            <Text style={styles.label}>CÓDIGO DE INVERSIÓN:</Text>
-                            <Text style={styles.value}>{codigoInversion}</Text>
-                        </View>
+
                     </View>
 
                     {/* Justificación */}
@@ -159,6 +154,7 @@ export default function FormularioPDF({ data }) {
                         <View style={[styles.tableRow, styles.tableHeader]}>
                             <Text style={styles.cell}>CANT.</Text>
                             <Text style={styles.cell}>UNIDAD</Text>
+                            <Text style={styles.cellDesc}>NOMBRE</Text>
                             <Text style={styles.cellDesc}>DESCRIPCIÓN</Text>
                             <Text style={styles.cell}>P/U</Text>
                             <Text style={styles.cell}>TOTAL</Text>
@@ -166,7 +162,8 @@ export default function FormularioPDF({ data }) {
                         {items.map((item, i) => (
                             <View style={styles.tableRow} key={i}>
                                 <Text style={styles.cell}>{item.cantidad}</Text>
-                                <Text style={styles.cell}>{item.unidad}</Text>
+                                <Text style={styles.cell}>{item.unidad_medida || item.unidad || ''}</Text>
+                                <Text style={styles.cellDesc}>{item.nombre}</Text>
                                 <Text style={styles.cellDesc}>{item.descripcion}</Text>
                                 <Text style={styles.cell}>{item.pu}</Text>
                                 <Text style={styles.cell}>{item.total}</Text>
