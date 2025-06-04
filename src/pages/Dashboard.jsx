@@ -228,7 +228,7 @@ const Dashboard = () => {
                                     <h3 className="text-xl font-bold text-[#592644] mb-4">
                                         Alertas 
                                     </h3>
-                                    <div className="max-h-[600px] overflow-y-auto">
+                                    <div className="max-h-[710px] overflow-y-auto">
                                         <AlertsTable alerts={alertas} error={error} reload={fetchData} />
                                     </div>
                                 </div>
@@ -237,7 +237,11 @@ const Dashboard = () => {
                             <aside className="w-full xl:w-[450px] bg-[#59264426] p-4 -mt-7 rounded-xl">
                                 <div className="flex flex-col gap-6">
                                     <GraficoLab className="w-full h-64 rounded-xl shadow-lg" />
-                                    <GraficosDashboard insumos={insumos} className="w-full h-64 rounded-2xl shadow-lg" />
+                                    <GraficosDashboard 
+                                        insumos={insumos} 
+                                        solicitudes={solicitudes}
+                                        className="w-full h-64 rounded-2xl shadow-lg" 
+                                    />
                                 </div>
                             </aside>
                         </div>

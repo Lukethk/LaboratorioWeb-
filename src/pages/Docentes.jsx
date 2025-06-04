@@ -8,7 +8,6 @@ import { useNotifications } from '../context/NotificationContext';
 
 const API_URL = "https://universidad-la9h.onrender.com";
 
-// Inicializar EmailJS
 emailjs.init("YGtXs0j-jHwKbqIaq");
 
 const summaryCards = [
@@ -39,7 +38,7 @@ const SolicitudesUso = () => {
     const [error, setError] = useState(null);
     const [query, setQuery] = useState("");
     const [labFilter, setLabFilter] = useState("");
-    const [estadoFilter, setEstadoFilter] = useState("Pendiente");
+    const [estadoFilter, setEstadoFilter] = useState("");
     const [monthFilter, setMonthFilter] = useState("");
     const [dayFilter, setDayFilter] = useState("");
     const [yearFilter, setYearFilter] = useState("");
@@ -51,7 +50,7 @@ const SolicitudesUso = () => {
     const { isSidebarOpen } = useSidebar();
     const { addNotification } = useNotifications();
 
-    // Estados para la animación de cortinas
+
     const [showCurtains, setShowCurtains] = useState(true);
     const [animateOpen, setAnimateOpen] = useState(false);
 
@@ -72,12 +71,12 @@ const SolicitudesUso = () => {
     const notifiedSolicitudes = useRef(new Set(JSON.parse(localStorage.getItem('notifiedSolicitudesDocente') || '[]')));
 
     const abrirModalAsignaciones = async () => {
-        setShowDocentesModal(true);        // muestra el modal
+        setShowDocentesModal(true);       
 
         try {
-            setLoadingDocentes(true);        // spinner mientras carga
+            setLoadingDocentes(true);       
 
-            // Primero intentamos obtener los docentes
+            
             console.log('Intentando obtener docentes...');
             const docentesResponse = await fetch(`${API_URL}/docentes`);
             console.log('Respuesta de docentes:', docentesResponse.status);
@@ -90,7 +89,7 @@ const SolicitudesUso = () => {
             console.log('Datos de docentes recibidos:', docentesData);
             setDocentes(docentesData);
 
-            // Luego intentamos obtener las aulas
+            
             console.log('Intentando obtener aulas...');
             const aulasResponse = await fetch(`${API_URL}/aulas`);
             console.log('Respuesta de aulas:', aulasResponse.status);
@@ -110,7 +109,7 @@ const SolicitudesUso = () => {
 
             setLaboratorios(aulasData);
 
-            // pre-seleccionar el aula ya asignada
+           
             const prefills = {};
             docentesData.forEach(d => {
                 if (d.id_aula) prefills[d.id_docente] = d.id_aula;
@@ -119,7 +118,7 @@ const SolicitudesUso = () => {
 
         } catch (err) {
             console.error("Error cargando docentes/aulas:", err);
-            setLaboratorios([]); // En caso de error, establecer un array vacío
+            setLaboratorios([]); 
         } finally {
             setLoadingDocentes(false);
         }
@@ -130,7 +129,7 @@ const SolicitudesUso = () => {
             setLoading(true);
             const res = await fetch(`${API_URL}/solicitudes-uso`);
             const data = await res.json();
-            // Notificar nuevas solicitudes de docente
+           
             data.forEach(solicitud => {
                 if (solicitud.estado === 'Pendiente' && !notifiedSolicitudes.current.has(solicitud.id_solicitud)) {
                     addNotification({
@@ -154,7 +153,7 @@ const SolicitudesUso = () => {
     useEffect(() => {
         fetchData();
 
-        // Lógica de animación de cortinas
+       
         const hasEnteredBefore = sessionStorage.getItem("solicitudesEntered");
 
         if (!hasEnteredBefore) {
@@ -222,7 +221,7 @@ const SolicitudesUso = () => {
             const response = await fetch(`${API_URL}/solicitudes-uso/${id}`);
             const data = await response.json();
 
-            // Inicializar devolución parcial con todas las cantidades como devueltas
+           
             const inicialDevolucion = {};
             data.insumos.forEach(insumo => {
                 inicialDevolucion[insumo.id_insumo] = insumo.cantidad_total;
@@ -250,7 +249,6 @@ const SolicitudesUso = () => {
     };
 
     const handleCantidadDevuelta = (insumoId, cantidad) => {
-        // Asegurarse que la cantidad esté entre 0 y el máximo disponible
         const insumo = expandedSolicitud.insumos.find(i => i.id_insumo === insumoId);
         const maxCantidad = insumo ? insumo.cantidad_total : 0;
         const nuevaCantidad = Math.max(0, Math.min(parseInt(cantidad) || 0, maxCantidad));
@@ -336,9 +334,7 @@ Insumos no devueltos: ${data.insumos_no_devueltos.length}`);
                 });
                 const data = await response.json();
                 if (!response.ok) throw new Error(data.message);
-                // Puedes mostrar un mensaje de éxito si lo deseas
             } catch (error) {
-                // Puedes mostrar un mensaje de error si lo deseas
             }
         }
         setShowConfirmDialog(false);
@@ -364,18 +360,15 @@ Insumos no devueltos: ${data.insumos_no_devueltos.length}`);
         try {
             setEnviandoCorreo(true);
             
-            // Verificar el estado actual de la solicitud
             const solicitudActual = solicitudes.find(s => s.id_solicitud === solicitudRechazo.id_solicitud);
             if (!solicitudActual) {
                 throw new Error('No se encontró la solicitud');
             }
 
-            // Solo permitir rechazar si está en estado Pendiente
             if (solicitudActual.estado !== 'Pendiente') {
                 throw new Error(`No se puede rechazar una solicitud en estado ${solicitudActual.estado}`);
             }
 
-            // Actualizar el estado de la solicitud
             const response = await fetch(`${API_URL}/solicitudes-uso/${solicitudRechazo.id_solicitud}/estado`, {
                 method: 'PUT',
                 headers: { 
@@ -400,7 +393,6 @@ Insumos no devueltos: ${data.insumos_no_devueltos.length}`);
             }
 
             try {
-                // Enviar correo usando EmailJS
                 const templateParams = {
                     to_email: solicitudRechazo.correo_docente,
                     to_name: solicitudRechazo.docente_nombre,
@@ -437,7 +429,6 @@ Insumos no devueltos: ${data.insumos_no_devueltos.length}`);
 
             } catch (emailError) {
                 console.error('Error al enviar correo:', emailError);
-                // Si falla el envío del correo, al menos actualizamos el estado
                 setSolicitudes((prevSolicitudes) =>
                     prevSolicitudes.map((s) =>
                         s.id_solicitud === solicitudRechazo.id_solicitud 

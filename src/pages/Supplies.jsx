@@ -143,8 +143,8 @@ const Supplies = () => {
         if (tipoFiltro && insumo.tipo !== tipoFiltro) return false;
         if (ubicacionFiltro && insumo.ubicacion !== ubicacionFiltro) return false;
         if (unidadFiltro && insumo.unidad_medida !== unidadFiltro) return false;
-        if (filaFiltro && insumo.fila !== filaFiltro) return false;
-        if (columnaFiltro && insumo.columna !== columnaFiltro) return false;
+        if (filaFiltro && insumo.ubicacion?.charAt(0) !== filaFiltro) return false;
+        if (columnaFiltro && insumo.ubicacion?.substring(1) !== columnaFiltro) return false;
 
         return true;
     };
@@ -359,8 +359,13 @@ const Supplies = () => {
         .filter(Boolean)
     )].sort();
 
-    const filas = [...new Set(insumos.map(i => i.fila))].filter(Boolean).sort();
-    const columnas = [...new Set(insumos.map(i => i.columna))].filter(Boolean).sort((a, b) => a - b);
+    const filas = [...new Set(insumos.map(i => i.ubicacion?.charAt(0)))]
+        .filter(Boolean)
+        .sort();
+
+    const columnas = [...new Set(insumos.map(i => i.ubicacion?.substring(1)))]
+        .filter(Boolean)
+        .sort((a, b) => parseInt(a) - parseInt(b));
 
     if (error) return <div className="p-6 text-red-500">Error: {error}</div>;
 

@@ -321,12 +321,11 @@ const MovimientosDeInventario = () => {
                             <th className="px-4 py-3 text-left text-gray-600 font-semibold">Insumo</th>
                             <th className="px-4 py-3 text-center text-gray-600 font-semibold">Tipo</th>
                             <th className="px-4 py-3 text-center text-gray-600 font-semibold">Cantidad</th>
-                            <th className="px-4 py-3 text-center text-gray-600 font-semibold">Acciones</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
                         {solicitud.movimientos.map((movimiento) => (
-                            <tr key={movimiento.id_movimiento} className="hover:bg-gray-50">
+                            <tr key={movimiento.id_movimiento}>
                                 <td className="px-4 py-3">
                                     <div className="font-medium text-gray-900">{movimiento.insumo_nombre}</div>
                                 </td>
@@ -347,18 +346,6 @@ const MovimientosDeInventario = () => {
                                     }`}>
                                         {movimiento.tipo_movimiento === 'PRESTAMO' ? '-' : '+'}{movimiento.cantidad}
                                     </span>
-                                </td>
-                                <td className="px-4 py-3 text-center">
-                                    <button
-                                        onClick={() => {
-                                            setSelectedMovimiento(movimiento);
-                                            setModalVisible(true);
-                                        }}
-                                        className="text-[#592644] hover:text-[#4a1f38] font-medium inline-flex items-center gap-1"
-                                    >
-                                        <FaSearch className="text-sm" />
-                                        <span>Detalles</span>
-                                    </button>
                                 </td>
                             </tr>
                         ))}

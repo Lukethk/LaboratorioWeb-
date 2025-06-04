@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import Sidebar from "../components/Sidebar.jsx";
 import { PencilIcon, XMarkIcon, PlusIcon } from '@heroicons/react/24/solid';
-import { pdf, PDFDownloadLink } from "@react-pdf/renderer";
-import FormularioPDF from '../components/FormularioPDF';
 import axios from 'axios';
 import { EyeIcon } from "lucide-react";
 import { useSidebar } from "../context/SidebarContext";
@@ -11,22 +9,17 @@ const API_URL = "https://universidad-la9h.onrender.com";
 const Solicitudes = () => {
     const [solicitudes, setSolicitudes] = useState([]);
     const [insumos, setInsumos] = useState([]);
-    const [filter, setFilter] = useState("Pendientes");
+    const [filter, setFilter] = useState("Todas");
     const [modalOpen, setModalOpen] = useState(false);
-    const [descargarPDF, setDescargarPDF] = useState(false);
-    const [formData, setFormData] = useState(null);
-    const [confirmModalOpen, setConfirmModalOpen] = useState(false);
-    const [estadoPendiente, setEstadoPendiente] = useState(null);
     const [selectedSolicitud, setSelectedSolicitud] = useState(null);
     const [showModal, setShowModal] = useState(false);
     const [editModalOpen, setEditModalOpen] = useState(false);
     const [editSolicitud, setEditSolicitud] = useState({
         id: null,
-        nombre: "",
         estado: "Pendiente",
+        observaciones: ""
     });
     const [header, setHeader] = useState({
-        unidad: "",
         responsable: "",
         fecha: "",
         observaciones: "",
@@ -36,48 +29,55 @@ const Solicitudes = () => {
     const [items, setItems] = useState([]);
     const [mensaje, setMensaje] = useState(null);
     const { isSidebarOpen } = useSidebar();
-    const notifiedSolicitudesEstudiante = useRef(new Set(JSON.parse(localStorage.getItem('notifiedSolicitudesEstudiante') || '[]')));
     const [error, setError] = useState(null);
+    const [loadingAction, setLoadingAction] = useState(null);
+    const [loadingSubmit, setLoadingSubmit] = useState(false);
+    const [gestor, setGestor] = useState(null);
+    const [encargados, setEncargados] = useState([]);
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [solicitudToComplete, setSolicitudToComplete] = useState(null);
+
+    const money = (n) => Number(n).toLocaleString('es-BO', { minimumFractionDigits: 2 });
+
+    useEffect(() => {
+        const id = localStorage.getItem('gestorId');
+        if (id) {
+            fetch(`${API_URL}/encargados/${id}`)
+                .then(res => res.json())
+                .then(data => {
+                    setGestor(data);
+                    setHeader(prev => ({
+                        ...prev,
+                        responsable: data.nombre,
+                        unidad: data.unidad || "No especificada"
+                    }));
+                })
+                .catch(() => setGestor(null));
+        }
+    }, []);
+
+    useEffect(() => {
+        fetch(`${API_URL}/encargados`)
+            .then(res => res.json())
+            .then(data => {
+                setEncargados(data);
+            })
+            .catch(error => {
+                console.error('Error al cargar encargados:', error);
+            });
+    }, []);
 
     const fetchSolicitudes = async () => {
         try {
-            console.log('Iniciando fetchSolicitudes...');
-            console.log('URL de la API:', `${API_URL}/solicitudes`);
-            
             const res = await fetch(`${API_URL}/solicitudes`);
-            console.log('Respuesta de la API:', res);
-            
-            if (!res.ok) {
-                console.error('Error en la respuesta:', res.status, res.statusText);
-                setError(`Error al obtener solicitudes: ${res.status} ${res.statusText}`);
-                throw new Error(`Error al obtener solicitudes: ${res.status} ${res.statusText}`);
-            }
-            
+            if (!res.ok) throw new Error("Error al obtener solicitudes");
             const data = await res.json();
-            console.log('Datos recibidos:', data);
-            
-            if (!Array.isArray(data)) {
-                console.error('Los datos recibidos no son un array:', data);
-                setError('Formato de datos inválido');
-                return;
-            }
-
-            // Mapear los datos para asegurar que tengan el formato correcto
-            const solicitudesFormateadas = data.map(solicitud => ({
-                id_solicitud: solicitud.id_solicitud,
-                nombre_solicitud: solicitud.nombre_solicitud || '',
-                estado: solicitud.estado || 'Pendiente',
-                cantidad_solicitada: solicitud.cantidad_solicitada || 0,
-                observaciones: solicitud.observaciones || '',
-                fecha_creacion: solicitud.fecha_creacion || new Date().toISOString()
-            }));
-            
-            setSolicitudes(solicitudesFormateadas);
+            if (!Array.isArray(data)) throw new Error("Formato de datos inválido");
+            setSolicitudes(data);
             setError(null);
         } catch (e) {
-            console.error('Error detallado:', e);
+            console.error('Error:', e);
             setError(`Error al cargar las solicitudes: ${e.message}`);
-            alert('Error al cargar las solicitudes. Por favor, verifica la consola para más detalles.');
         }
     };
 
@@ -91,36 +91,6 @@ const Solicitudes = () => {
         }
     };
 
-    const fetchInsumosSolicitud = async (idSolicitud) => {
-        try {
-            const res = await fetch(`${API_URL}/solicitudes/${idSolicitud}/insumos`);
-            if (!res.ok) throw new Error("Error al obtener insumos de la solicitud");
-            return await res.json();
-        } catch (e) {
-            console.error(e);
-            return [];
-        }
-    };
-
-    const handleViewDetails = async (solicitud) => {
-        try {
-            const insumosSolicitud = await fetchInsumosSolicitud(solicitud.id_solicitud);
-            setSelectedSolicitud({
-                ...solicitud,
-                insumos: insumosSolicitud
-            });
-            setShowModal(true);
-        } catch (error) {
-            console.error("Error al cargar detalles:", error);
-            alert("No se pudieron cargar los detalles de la solicitud");
-        }
-    };
-
-    useEffect(() => {
-        fetchSolicitudes();
-        fetchInsumos();
-    }, [error]);
-
     const getEstado = (i) => {
         const actual = parseInt(i.stock_actual);
         const minimo = parseInt(i.stock_minimo);
@@ -129,17 +99,85 @@ const Solicitudes = () => {
         return "Disponible";
     };
 
-    const handleFilter = (s) => {
-        if (filter === "Pendientes") return s.estado === "Pendiente";
-        if (filter === "Completas") return s.estado === "Completada";
-        return true;
-    };
+    const handleCreateSolicitud = async (e) => {
+        e.preventDefault();
+        setLoadingSubmit(true);
 
-    const openCreateModal = () => {
-        const criticos = insumos.filter((i) => getEstado(i) === "Stock Bajo");
-        setItems([]);
-        setHeader({ unidad: "", responsable: "", fecha: "", observaciones: "", centroCosto: "", justificacion: "" });
-        setModalOpen(true);
+        if (!items.length) {
+            showMensaje("Debe agregar al menos un ítem");
+            setLoadingSubmit(false);
+            return;
+        }
+
+        const selectedEncargado = encargados.find(enc => enc.nombre === header.responsable);
+        if (!selectedEncargado) {
+            showMensaje("Debe seleccionar un responsable");
+            setLoadingSubmit(false);
+            return;
+        }
+
+        const solicitudData = {
+            id_encargado: selectedEncargado.id_encargado,
+            fecha_emision: header.fecha,
+            centro_costo: header.centroCosto,
+            codigo_inversion: '',
+            justificacion: header.justificacion,
+            observaciones: header.observaciones,
+            items: items.map(item => ({
+                id_insumo: Number(item.id),
+                cantidad: Number(item.cantidad),
+                precio_unitario: Number(item.precio),
+                descripcion: item.nombre
+            }))
+        };
+
+        try {
+            const response = await fetch(`${API_URL}/solicitudes`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(solicitudData)
+            });
+
+            if (!response.ok) throw new Error('Error al crear la solicitud');
+
+            const data = await response.json();
+            
+            // Descargar Excel después de crear la solicitud
+            try {
+                const excelResponse = await fetch(`${API_URL}/solicitudes-adquisicion/${data.id_solicitud}/excel`);
+                if (!excelResponse.ok) throw new Error('Error al descargar Excel');
+                
+                const blob = await excelResponse.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Solicitud_${data.id_solicitud}.xlsx`;
+                a.click();
+                URL.revokeObjectURL(url);
+            } catch (error) {
+                console.error('Error al descargar Excel:', error);
+                showMensaje('La solicitud se creó pero hubo un error al descargar el Excel');
+            }
+
+            showMensaje('Solicitud creada exitosamente');
+            setModalOpen(false);
+            setItems([]);
+            setHeader({
+                responsable: "",
+                fecha: "",
+                observaciones: "",
+                centroCosto: "",
+                justificacion: ""
+            });
+            fetchSolicitudes();
+        } catch (error) {
+            console.error('Error al crear la solicitud:', error);
+            showMensaje('Error al crear la solicitud');
+        } finally {
+            setLoadingSubmit(false);
+        }
     };
 
     const handlePrecioChange = (idx, precio) => {
@@ -182,8 +220,56 @@ const Solicitudes = () => {
         }]);
     };
 
-    const handleEliminarInsumo = (id) => {
-        setItems(prev => prev.filter(item => item.id !== id));
+    const handleQuitarInsumo = (idx) => {
+        setItems(prev => prev.filter((_, i) => i !== idx));
+    };
+
+    const handleExcelDownload = async (id) => {
+        try {
+            setLoadingAction(id);
+            const response = await fetch(`${API_URL}/solicitudes-adquisicion/${id}/excel`);
+            if (!response.ok) throw new Error('Error al descargar Excel');
+            
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Solicitud_${id}.xlsx`;
+            a.click();
+            URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Error al descargar Excel:', error);
+            showMensaje('Error al descargar el archivo Excel');
+        } finally {
+            setLoadingAction(null);
+        }
+    };
+
+    const handleEditSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            setLoadingAction(editSolicitud.id);
+            const response = await fetch(`${API_URL}/solicitudes/${editSolicitud.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    estado: editSolicitud.estado
+                })
+            });
+
+            if (!response.ok) throw new Error('Error al actualizar la solicitud');
+
+            showMensaje('Solicitud actualizada exitosamente');
+            setEditModalOpen(false);
+            fetchSolicitudes();
+        } catch (error) {
+            console.error('Error al actualizar la solicitud:', error);
+            showMensaje('Error al actualizar la solicitud');
+        } finally {
+            setLoadingAction(null);
+        }
     };
 
     const showMensaje = (text) => {
@@ -191,150 +277,42 @@ const Solicitudes = () => {
         setTimeout(() => setMensaje(null), 3000);
     };
 
-    // Función para convertir número a letras (simplificada para Bs)
-    function numeroALetras(num) {
-        const unidades = ['','uno','dos','tres','cuatro','cinco','seis','siete','ocho','nueve'];
-        const decenas = ['','diez','veinte','treinta','cuarenta','cincuenta','sesenta','setenta','ochenta','noventa'];
-        const centenas = ['','cien','doscientos','trescientos','cuatrocientos','quinientos','seiscientos','setecientos','ochocientos','novecientos'];
-        if (num === 0) return 'CERO BOLIVIANOS';
-        if (num > 999999) return num + ' BOLIVIANOS'; // simplificado para montos grandes
-        let n = Math.floor(num);
-        let c = Math.floor(n / 100000);
-        let resto = n % 100000;
-        let texto = '';
-        if (c > 0) texto += unidades[c] + 'cientos ';
-        let d = Math.floor(resto / 10000);
-        resto = resto % 10000;
-        if (d > 0) texto += decenas[d] + ' mil ';
-        let m = Math.floor(resto / 1000);
-        resto = resto % 1000;
-        if (m > 0) texto += unidades[m] + ' mil ';
-        let ce = Math.floor(resto / 100);
-        resto = resto % 100;
-        if (ce > 0) texto += centenas[ce] + ' ';
-        let de = Math.floor(resto / 10);
-        let u = resto % 10;
-        if (de > 0) texto += decenas[de] + ' ';
-        if (u > 0) texto += unidades[u] + ' ';
-        texto = texto.trim().toUpperCase() + ' BOLIVIANOS';
-        return texto;
-    }
+    const handleFilter = (s) => {
+        if (filter === "Pendientes") return s.estado === "Pendiente";
+        if (filter === "Completadas") return s.estado === "Completada";
+        return true;
+    };
 
-    const handleCreatePDF = async (e) => {
-        e.preventDefault();
-
-        const solicitudData = {
-            nombre_solicitud: header.unidad,
-            cantidad_solicitada: items.reduce((acc, item) => acc + item.cantidad, 0),
-            estado: "Pendiente",
-            observaciones: header.observaciones || '',
-        };
-
+    const handleMarkAsCompleted = async () => {
         try {
-            const response = await axios.post(`${API_URL}/solicitudes`, solicitudData);
+            setLoadingAction(solicitudToComplete.id_solicitud);
+            const response = await fetch(`${API_URL}/solicitudes/${solicitudToComplete.id_solicitud}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    estado: "Completada"
+                })
+            });
 
-            if (response.status === 201) {
-                setFormData({
-                    unidadSolicitante: header.unidad,
-                    fecha: header.fecha,
-                    responsable: header.responsable,
-                    centroCosto: header.centroCosto,
-                    justificacion: header.justificacion,
-                    observaciones: header.observaciones,
-                    items: items.map(it => ({
-                        cantidad: it.cantidad,
-                        unidad: it.unidad_medida || it.unidad || '',
-                        unidad_medida: it.unidad_medida || it.unidad || '',
-                        nombre: it.nombre,
-                        descripcion: it.descripcion,
-                        pu: it.precio,
-                        total: it.valorTotal,
-                    })),
-                    valorTotal: items.reduce((acc, item) => acc + item.valorTotal, 0).toFixed(2),
-                });
+            if (!response.ok) throw new Error('Error al actualizar la solicitud');
 
-                setDescargarPDF(true);
-                setModalOpen(false);
-            } else {
-                alert("Error al guardar la solicitud.");
-            }
+            showMensaje('Solicitud marcada como completada');
+            setShowConfirmModal(false);
+            fetchSolicitudes();
         } catch (error) {
-            console.error("Error al enviar la solicitud a la API:", error);
-            alert("Hubo un problema al guardar la solicitud. Por favor, intentalo nuevamente.");
+            console.error('Error al actualizar la solicitud:', error);
+            showMensaje('Error al actualizar la solicitud');
+        } finally {
+            setLoadingAction(null);
         }
     };
 
     useEffect(() => {
-        if (descargarPDF && formData) {
-            const doc = <FormularioPDF data={formData} />;
-            const blobPromise = pdf(doc).toBlob();
-
-            blobPromise.then(blob => {
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `Solicitud_${formData.fecha || 'sin_fecha'}.pdf`;
-                a.click();
-                URL.revokeObjectURL(url);
-
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1000);
-            });
-
-            setDescargarPDF(false);
-        }
-    }, [descargarPDF, formData]);
-
-    const handleEdit = (s) => {
-        setEditSolicitud({
-            id: s.id_solicitud,
-            nombre: s.nombre_solicitud,
-            estado: s.estado,
-        });
-        setEditModalOpen(true);
-    };
-
-    const handleQuitarInsumo = (idx) => {
-        setItems(prev => prev.filter((_, i) => i !== idx));
-    };
-
-    const handleEditSubmit = async (e) => {
-        e.preventDefault();
-        try {
-            const response = await fetch(`${API_URL}/solicitudes/${editSolicitud.id}`, {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    nombre_solicitud: editSolicitud.nombre,
-                    estado: editSolicitud.estado,
-                }),
-            });
-
-            if (!response.ok) {
-                throw new Error("Error al actualizar solicitud");
-            }
-
-            setEditModalOpen(false);
-            fetchSolicitudes();
-        } catch (error) {
-            console.error("Error al actualizar solicitud", error);
-            alert(error.message);
-        }
-    };
-
-    // Agregar un componente para mostrar errores
-    const ErrorMessage = () => {
-        if (!error) return null;
-        return (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-                <strong className="font-bold">Error: </strong>
-                <span className="block sm:inline">{error}</span>
-            </div>
-        );
-    };
+        fetchSolicitudes();
+        fetchInsumos();
+    }, []);
 
     return (
         <div className="flex flex-col lg:flex-row h-screen">
@@ -342,25 +320,30 @@ const Solicitudes = () => {
 
             <div className={`flex-1 p-4 bg-white overflow-auto transition-all duration-300 ${isSidebarOpen ? 'lg:ml-64' : 'lg:ml-20'}`}>
                 <div className="flex justify-between items-center mb-6">
-                    <h1 className="text-2xl font-bold">Solicitudes de Insumos</h1>
+                    <h1 className="text-2xl font-bold">Solicitudes de Adquisición</h1>
                     <button
-                        onClick={openCreateModal}
+                        onClick={() => setModalOpen(true)}
                         className="px-5 py-3 bg-[#592644] text-white rounded-md hover:bg-[#4b1f3d] transition text-sm md:text-base"
                     >
-                        Crear una Solicitud
+                        Nueva Solicitud
                     </button>
                 </div>
 
-                <ErrorMessage />
+                {error && (
+                    <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
+                        {error}
+                    </div>
+                )}
 
                 <div className="flex gap-2 mb-8">
-                    {["Pendientes", "Completas"].map((opt) => (
+                    {["Todas", "Pendientes", "Completadas"].map((opt) => (
                         <button
                             key={opt}
                             onClick={() => setFilter(opt)}
-                            className={`px-4 py-2 rounded-md text-sm font-medium transition ${filter === opt
-                                ? "bg-[#4b1f3d] text-white"
-                                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                            className={`px-4 py-2 rounded-md text-sm font-medium transition ${
+                                filter === opt
+                                    ? "bg-[#592644] text-white"
+                                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                             }`}
                         >
                             {opt}
@@ -377,207 +360,131 @@ const Solicitudes = () => {
                             <p className="text-[#592644]">No hay solicitudes {filter.toLowerCase()}</p>
                         </div>
                     ) : (
-                        solicitudes.filter(handleFilter).map((s) => (
-                            <div key={s.id_solicitud} className="bg-white p-4 rounded-lg shadow-lg border-l-4 border-[#592644] transition-all transform hover:scale-105 hover:shadow-xl">
-                                <div className="flex justify-between items-center mb-4">
-                                    <h2 className="text-lg font-semibold text-[#592644] truncate">{s.nombre_solicitud}</h2>
-                                    <span
-                                        className={`text-xs font-semibold ${s.estado === "Pendiente"
-                                            ? "text-yellow-500"
-                                            : s.estado === "Completada"
-                                                ? "text-green-500"
-                                                : "text-gray-500"
-                                        }`}
-                                    >
-                                        {s.estado}
+                        solicitudes.filter(handleFilter).map((solicitud) => (
+                            <div key={solicitud.id_solicitud} className="bg-gradient-to-br from-white to-gray-50 p-6 rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                                <div className="flex justify-between items-start mb-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-full bg-[#592644] flex items-center justify-center text-white font-bold">
+                                            {solicitud.responsable.charAt(0)}
+                                        </div>
+                                        <div>
+                                            <h2 className="text-lg font-semibold text-[#592644]">#{solicitud.id_solicitud}</h2>
+                                            <p className="text-sm text-gray-600">{solicitud.responsable}</p>
+                                        </div>
+                                    </div>
+                                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                        solicitud.estado === "Pendiente" 
+                                            ? "bg-yellow-100 text-yellow-800 border border-yellow-200" 
+                                            : "bg-green-100 text-green-800 border border-green-200"
+                                    }`}>
+                                        {solicitud.estado}
                                     </span>
                                 </div>
-                                <p className="text-gray-700 text-sm mb-4 truncate">{s.observaciones}</p>
-                                <div className="flex justify-between items-center">
-                                    <button
-                                        onClick={() => handleViewDetails(s)}
-                                        className="text-sm px-2 py-1 bg-[#592644] text-white rounded-md hover:bg-[#4b1f3d] transition duration-300"
-                                    >
-                                        Ver Detalles
-                                    </button>
-
-                                    <div className="flex items-center gap-2">
-                                        <label className="relative inline-flex items-center cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={s.estado === "Completada"}
-                                                onChange={(e) => {
-                                                    const nuevoEstado = e.target.checked ? "Completada" : "Pendiente";
-                                                    setEstadoPendiente({ solicitud: s, nuevoEstado });
-                                                    setConfirmModalOpen(true);
-                                                }}
-                                                className="sr-only peer"
-                                            />
-                                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#592644]"></div>
-                                            <span className="ml-2 text-sm font-medium text-gray-700">
-        {s.estado === "Completada" ? "Completada" : "Marcar"}
-      </span>
-                                        </label>
+                                <div className="space-y-3 mb-4">
+                                    <div className="flex items-center text-sm text-gray-600">
+                                        <svg className="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                        <span>{new Date(solicitud.fecha_emision).toLocaleDateString()}</span>
                                     </div>
+                                    <div className="flex items-center text-sm text-gray-600">
+                                        <svg className="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                        </svg>
+                                        <span>{solicitud.unidad_solicitante || "No especificada"}</span>
+                                    </div>
+                                </div>
+                                <div className="flex justify-end space-x-2 pt-4 border-t border-gray-100">
+                                    <button
+                                        onClick={() => handleExcelDownload(solicitud.id_solicitud)}
+                                        disabled={loadingAction === solicitud.id_solicitud}
+                                        className="px-3 py-1.5 bg-[#592644] text-white rounded-md hover:bg-[#4b1f3d] text-sm transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {loadingAction === solicitud.id_solicitud ? (
+                                            <>
+                                                <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                </svg>
+                                                Descargando...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                </svg>
+                                                Descargar Excel
+                                            </>
+                                        )}
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setSolicitudToComplete(solicitud);
+                                            setShowConfirmModal(true);
+                                        }}
+                                        disabled={loadingAction === solicitud.id_solicitud || solicitud.estado === "Completada"}
+                                        className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {loadingAction === solicitud.id_solicitud ? (
+                                            <>
+                                                <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                </svg>
+                                                Actualizando...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                                                </svg>
+                                                Marcar como Completada
+                                            </>
+                                        )}
+                                    </button>
                                 </div>
                             </div>
                         ))
                     )}
                 </div>
 
-                {confirmModalOpen && estadoPendiente && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center">
-                        <div className="fixed inset-0 bg-white/30 backdrop-blur-sm" onClick={() => { setConfirmModalOpen(false); setEstadoPendiente(null); }} />
-                        <div className="bg-white p-6 rounded-lg shadow-xl w-96 relative z-50">
-                            <h2 className="text-xl font-semibold mb-4">Confirmar cambio de estado</h2>
-                            <p className="mb-6">¿Estás seguro que deseas marcar esta solicitud como <strong>{estadoPendiente.nuevoEstado}</strong>?</p>
-
-                            <div className="flex justify-end space-x-2">
-                                <button
-                                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
-                                    onClick={() => {
-                                        setConfirmModalOpen(false);
-                                        setEstadoPendiente(null);
-                                    }}
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    className="px-4 py-2 bg-[#592644] text-white rounded hover:bg-[#4b1f3d]"
-                                    onClick={async () => {
-                                        try {
-                                            const { solicitud, nuevoEstado } = estadoPendiente;
-                                            const response = await fetch(`${API_URL}/solicitudes/${solicitud.id_solicitud}`, {
-                                                method: "PUT",
-                                                headers: { "Content-Type": "application/json" },
-                                                body: JSON.stringify({
-                                                    nombre_solicitud: solicitud.nombre_solicitud,
-                                                    estado: nuevoEstado,
-                                                }),
-                                            });
-
-                                            if (!response.ok) throw new Error("Error al actualizar solicitud");
-
-                                            fetchSolicitudes();
-                                            setConfirmModalOpen(false);
-                                            setEstadoPendiente(null);
-                                        } catch (error) {
-                                            console.error("Error al cambiar estado:", error);
-                                            alert("Error al actualizar estado.");
-                                        }
-                                    }}
-                                >
-                                    Confirmar
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {showModal && selectedSolicitud && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center">
-                        <div className="fixed inset-0 bg-white/30 backdrop-blur-sm" onClick={() => setShowModal(false)} />
-                        <div className="bg-white p-6 rounded-lg w-full max-w-4xl max-h-[90vh] overflow-auto relative z-50">
-                            <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-2xl font-semibold">Detalles de la Solicitud</h3>
-                                <button
-                                    onClick={() => setShowModal(false)}
-                                    className="text-gray-500 hover:text-gray-700"
-                                >
-                                    <XMarkIcon className="w-6 h-6" />
-                                </button>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                                <div>
-                                    <p className="font-medium">Nombre:</p>
-                                    <p>{selectedSolicitud.nombre_solicitud || "No especificado"}</p>
-                                </div>
-                                <div>
-                                    <p className="font-medium">Estado:</p>
-                                    <p>{selectedSolicitud.estado || "No especificado"}</p>
-                                </div>
-                                <div>
-                                    <p className="font-medium">Fecha creación:</p>
-                                    <p>{new Date(selectedSolicitud.fecha_creacion).toLocaleDateString() || "No especificada"}</p>
-                                </div>
-                                <div>
-                                    <p className="font-medium">Cantidad solicitada:</p>
-                                    <p>{selectedSolicitud.cantidad_solicitada || "0"}</p>
-                                </div>
-                                <div className="md:col-span-2">
-                                    <p className="font-medium">Observaciones:</p>
-                                    <p>{selectedSolicitud.observaciones || "No hay observaciones"}</p>
-                                </div>
-                            </div>
-
-                            <h4 className="text-xl font-semibold mb-4">Insumos Solicitados</h4>
-
-                            {selectedSolicitud.insumos && selectedSolicitud.insumos.length > 0 ? (
-                                <div className="overflow-x-auto">
-                                    <table className="w-full border-collapse">
-                                        <thead>
-                                        <tr className="bg-gray-100">
-                                            <th className="p-2 border text-left">Nombre</th>
-                                            <th className="p-2 border text-center">Cantidad</th>
-                                            <th className="p-2 border text-center">Precio Unitario</th>
-                                            <th className="p-2 border text-right">Total</th>
-                                        </tr>
-                                        </thead>
-                                        <tbody>
-                                        {selectedSolicitud.insumos.map((insumo, index) => (
-                                            <tr key={index} className="hover:bg-gray-50">
-                                                <td className="p-2 border">{insumo.nombre || "Insumo sin nombre"}</td>
-                                                <td className="p-2 border text-center">{insumo.cantidad || "0"}</td>
-                                                <td className="p-2 border text-center">${insumo.precio_unitario?.toFixed(2) || "0.00"}</td>
-                                                <td className="p-2 border text-right">${((insumo.cantidad || 0) * (insumo.precio_unitario || 0)).toFixed(2)}</td>
-                                            </tr>
-                                        ))}
-                                        </tbody>
-                                        <tfoot>
-                                        <tr className="font-semibold">
-                                            <td colSpan="3" className="p-2 border text-right">Total:</td>
-                                            <td className="p-2 border text-right">
-                                                ${selectedSolicitud.insumos.reduce((sum, insumo) =>
-                                                sum + ((insumo.cantidad || 0) * (insumo.precio_unitario || 0)), 0).toFixed(2)}
-                                            </td>
-                                        </tr>
-                                        </tfoot>
-                                    </table>
-                                </div>
-                            ) : (
-                                <p className="text-gray-500 italic">No hay insumos asociados a esta solicitud</p>
-                            )}
-
-                            <div className="mt-6 flex justify-end">
-                                <button
-                                    onClick={() => setShowModal(false)}
-                                    className="px-4 py-2 bg-[#592644] text-white rounded hover:bg-[#4b1f3d]"
-                                >
-                                    Cerrar
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
                 {modalOpen && (
-                    <div className="fixed inset-0 flex items-center justify-center bg-[#59264426] z-50">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/30">
                         <div className="bg-white p-6 rounded-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
                             <div className="flex justify-between items-center mb-6">
-                                <h2 className="text-xl font-bold">Nueva Solicitud de Insumos</h2>
+                                <h2 className="text-xl font-bold">Nueva Solicitud de Adquisición</h2>
                                 <button onClick={() => setModalOpen(false)}>
-                                    <XMarkIcon className="w-6 h-6 text-gray-700 hover:text-red-500 transition" />
+                                    <XMarkIcon className="w-6 h-6" />
                                 </button>
                             </div>
 
                             <form
                                 className="grid grid-cols-1 sm:grid-cols-2 gap-4"
-                                onSubmit={handleCreatePDF}
+                                onSubmit={handleCreateSolicitud}
                             >
-                                {[{ label: "Unidad Solicitante", key: "unidad", type: "text" },
-                                    { label: "Responsable", key: "responsable", type: "text" },
-                                    { label: "Fecha", key: "fecha", type: "date" },
+                                <div className="col-span-full">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Responsable</label>
+                                    <select
+                                        value={header.responsable}
+                                        onChange={(e) => {
+                                            setHeader(prev => ({
+                                                ...prev,
+                                                responsable: e.target.value
+                                            }));
+                                        }}
+                                        className="w-full border p-2 rounded"
+                                        required
+                                    >
+                                        <option value="">Seleccione un responsable</option>
+                                        {encargados.map((encargado) => (
+                                            <option key={encargado.id_encargado} value={encargado.nombre}>
+                                                {encargado.nombre} {encargado.apellido}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {[{ label: "Fecha", key: "fecha", type: "date" },
                                     { label: "Centro de Costo", key: "centroCosto", type: "text" },
                                     { label: "Justificación", key: "justificacion", type: "text" }].map(({ label, key, type }) => (
                                     <div key={key} className="col-span-full">
@@ -609,7 +516,16 @@ const Solicitudes = () => {
                                             {items.map((it, idx) => (
                                                 <tr key={it.id} className="hover:bg-gray-50">
                                                     <td className="px-2 py-1 border">{it.nombre}</td>
-                                                    <td className="px-2 py-1 border text-center">{it.cantidad}</td>
+                                                    <td className="px-2 py-1 border">
+                                                        <input
+                                                            type="number"
+                                                            min="1"
+                                                            className="w-full border p-1 rounded text-center"
+                                                            value={it.cantidad}
+                                                            onChange={(e) => handleCantidadChange(idx, e.target.value)}
+                                                            required
+                                                        />
+                                                    </td>
                                                     <td className="px-2 py-1 border">
                                                         <input
                                                             type="number"
@@ -673,41 +589,23 @@ const Solicitudes = () => {
                                     </button>
 
                                     {items.length > 0 && (
-                                        <PDFDownloadLink
-                                            key={items.map(it => it.id).join('-')}
-                                            document={
-                                                <FormularioPDF
-                                                    data={{
-                                                        unidadSolicitante: header.unidad,
-                                                        fecha: header.fecha,
-                                                        responsable: header.responsable,
-                                                        centroCosto: header.centroCosto,
-                                                        justificacion: header.justificacion,
-                                                        observaciones: header.observaciones,
-                                                        items: items.map(it => ({
-                                                            cantidad: it.cantidad,
-                                                            unidad: it.unidad_medida || it.unidad || '',
-                                                            unidad_medida: it.unidad_medida || it.unidad || '',
-                                                            nombre: it.nombre,
-                                                            descripcion: it.nombre,
-                                                            pu: it.precio,
-                                                            total: it.valorTotal,
-                                                        })),
-                                                        valorTotal: items.reduce((acc, item) => acc + item.valorTotal, 0).toFixed(2),
-                                                    }}
-                                                />
-                                            }
-                                            fileName={`Solicitud_${header.fecha || 'sin_fecha'}.pdf`}
+                                        <button
+                                            type="submit"
+                                            disabled={loadingSubmit}
+                                            className="px-4 py-2 bg-[#592644] text-white rounded hover:bg-[#4b1f3d] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                                         >
-                                            {({ loading }) => (
-                                                <button
-                                                    type="submit"
-                                                    className="px-4 py-2 bg-[#592644] text-white rounded hover:bg-[#4b1f3d]"
-                                                >
-                                                    {loading ? 'Generando…' : 'Guardar y Exportar PDF'}
-                                                </button>
+                                            {loadingSubmit ? (
+                                                <>
+                                                    <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                    </svg>
+                                                    Guardando...
+                                                </>
+                                            ) : (
+                                                'Guardar y Descargar Excel'
                                             )}
-                                        </PDFDownloadLink>
+                                        </button>
                                     )}
                                 </div>
                             </form>
@@ -715,47 +613,51 @@ const Solicitudes = () => {
                     </div>
                 )}
 
-                {mensaje && (
-                    <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-[#592644] text-white px-6 py-3 rounded-xl shadow-lg z-50">
-                        {mensaje}
+                {showConfirmModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/30">
+                        <div className="bg-white p-6 rounded-xl w-full max-w-md">
+                            <div className="flex justify-between items-center mb-6">
+                                <h2 className="text-xl font-bold">Confirmar Acción</h2>
+                                <button onClick={() => setShowConfirmModal(false)}>
+                                    <XMarkIcon className="w-6 h-6" />
+                                </button>
+                            </div>
+
+                            <p className="mb-6">¿Estás seguro que deseas marcar la solicitud #{solicitudToComplete?.id_solicitud} como completada?</p>
+
+                            <div className="flex justify-end space-x-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowConfirmModal(false)}
+                                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={handleMarkAsCompleted}
+                                    disabled={loadingAction === solicitudToComplete?.id_solicitud}
+                                    className="px-4 py-2 bg-[#592644] text-white rounded hover:bg-[#4b1f3d] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                >
+                                    {loadingAction === solicitudToComplete?.id_solicitud ? (
+                                        <>
+                                            <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            Procesando...
+                                        </>
+                                    ) : (
+                                        'Confirmar'
+                                    )}
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 )}
 
-                {editModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center">
-                        <div className="fixed inset-0 bg-white/30 backdrop-blur-sm" onClick={() => setEditModalOpen(false)} />
-                        <div className="bg-white p-6 rounded-lg shadow-xl w-96 relative z-50">
-                            <div className="flex justify-between items-center mb-4">
-                                <h2 className="text-xl font-bold">Editar Solicitud</h2>
-                                <button onClick={() => setEditModalOpen(false)}>
-                                    <XMarkIcon className="w-6 h-6 text-gray-700 hover:text-red-500 transition" />
-                                </button>
-                            </div>
-                            <form onSubmit={handleEditSubmit} className="space-y-3">
-                                <input
-                                    type="text"
-                                    placeholder="Nombre de la solicitud"
-                                    value={editSolicitud.nombre}
-                                    onChange={(e) => setEditSolicitud((s) => ({ ...s, nombre: e.target.value }))}
-                                    className="w-full border p-2 rounded"
-                                />
-                                <select
-                                    className="w-full border p-2 rounded"
-                                    value={editSolicitud.estado}
-                                    onChange={(e) => setEditSolicitud((s) => ({ ...s, estado: e.target.value }))}
-                                    required
-                                >
-                                    <option value="Pendiente">Pendiente</option>
-                                    <option value="Completada">Completada</option>
-                                </select>
-                                <button
-                                    type="submit"
-                                    className="w-full bg-[#592644] text-white py-2 rounded"
-                                >
-                                    Guardar Cambios
-                                </button>
-                            </form>
-                        </div>
+                {mensaje && (
+                    <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-[#592644] text-white px-6 py-3 rounded-xl shadow-lg z-50">
+                        {mensaje}
                     </div>
                 )}
             </div>
