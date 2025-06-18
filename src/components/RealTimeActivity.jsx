@@ -19,46 +19,83 @@ const RealTimeActivity = ({ solicitudes, movimientos, alertas }) => {
     const generateRecentActivity = () => {
         const activities = [];
 
-        solicitudes.slice(0, 3).forEach((solicitud, index) => {
-            activities.push({
-                id: `solicitud-${index}`,
-                type: 'solicitud',
-                title: `Solicitud ${solicitud.id || index + 1}`,
-                description: `Estado: ${solicitud.estado}`,
-                time: 'Reciente',
-                priority: solicitud.estado === 'Pendiente' ? 'high' : 'normal'
+        // Procesar solicitudes reales
+        if (solicitudes && solicitudes.length > 0) {
+            solicitudes.slice(0, 3).forEach((solicitud, index) => {
+                const fecha = solicitud.fecha_hora_inicio || solicitud.fecha || new Date();
+                const timeAgo = getTimeAgo(new Date(fecha));
+                
+                activities.push({
+                    id: `solicitud-${solicitud.id_solicitud || index}`,
+                    type: 'solicitud',
+                    title: `Solicitud de ${solicitud.docente_nombre || solicitud.estudiante_nombre || 'Usuario'}`,
+                    description: `${solicitud.practica_titulo || solicitud.materia_nombre || 'Práctica'} - ${solicitud.estado}`,
+                    time: timeAgo,
+                    priority: solicitud.estado === 'Pendiente' ? 'high' : 'normal',
+                    fecha: fecha
+                });
             });
-        });
+        }
 
-        movimientos.slice(0, 3).forEach((movimiento, index) => {
-            activities.push({
-                id: `movimiento-${index}`,
-                type: 'movimiento',
-                title: `${movimiento.tipo_movimiento} de ${movimiento.insumo_nombre}`,
-                description: `${movimiento.cantidad} unidades`,
-                time: 'Reciente',
-                priority: 'normal'
+        // Procesar movimientos reales
+        if (movimientos && movimientos.length > 0) {
+            movimientos.slice(0, 3).forEach((movimiento, index) => {
+                const fecha = movimiento.fecha_entregado || movimiento.fecha || new Date();
+                const timeAgo = getTimeAgo(new Date(fecha));
+                
+                activities.push({
+                    id: `movimiento-${movimiento.id_movimiento || index}`,
+                    type: 'movimiento',
+                    title: `${movimiento.tipo_movimiento} de ${movimiento.insumo_nombre}`,
+                    description: `${movimiento.cantidad} unidades - ${movimiento.solicitante || 'Usuario'}`,
+                    time: timeAgo,
+                    priority: 'normal',
+                    fecha: fecha
+                });
             });
-        });
+        }
 
-        alertas.slice(0, 2).forEach((alerta, index) => {
-            activities.push({
-                id: `alerta-${index}`,
-                type: 'alerta',
-                title: `Alerta de Stock: ${alerta.insumo_nombre}`,
-                description: `Stock actual: ${alerta.stock_actual}`,
-                time: 'Reciente',
-                priority: 'high'
+        // Procesar alertas reales
+        if (alertas && alertas.length > 0) {
+            alertas.slice(0, 2).forEach((alerta, index) => {
+                const fecha = alerta.fecha || new Date();
+                const timeAgo = getTimeAgo(new Date(fecha));
+                
+                activities.push({
+                    id: `alerta-${alerta.id_alerta || index}`,
+                    type: 'alerta',
+                    title: `Alerta de Stock: ${alerta.insumo_nombre}`,
+                    description: `Stock actual: ${alerta.stock_actual} (mín: ${alerta.stock_minimo})`,
+                    time: timeAgo,
+                    priority: 'high',
+                    fecha: fecha
+                });
             });
-        });
+        }
 
+        // Ordenar por fecha (más reciente primero) y luego por prioridad
         activities.sort((a, b) => {
+            // Primero por prioridad
             if (a.priority === 'high' && b.priority !== 'high') return -1;
             if (b.priority === 'high' && a.priority !== 'high') return 1;
-            return 0;
+            
+            // Luego por fecha
+            return new Date(b.fecha) - new Date(a.fecha);
         });
 
         setRecentActivity(activities.slice(0, 8));
+    };
+
+    const getTimeAgo = (date) => {
+        const now = new Date();
+        const diffInSeconds = Math.floor((now - date) / 1000);
+        
+        if (diffInSeconds < 60) return 'Hace un momento';
+        if (diffInSeconds < 3600) return `Hace ${Math.floor(diffInSeconds / 60)} min`;
+        if (diffInSeconds < 86400) return `Hace ${Math.floor(diffInSeconds / 3600)}h`;
+        if (diffInSeconds < 2592000) return `Hace ${Math.floor(diffInSeconds / 86400)} días`;
+        
+        return date.toLocaleDateString('es-ES');
     };
 
     const getActivityIcon = (type) => {
@@ -91,10 +128,20 @@ const RealTimeActivity = ({ solicitudes, movimientos, alertas }) => {
     };
 
     const activeSolicitudes = solicitudes.filter(s => s.estado === 'Pendiente' || s.estado === 'Aprobada').length;
-    const todayMovements = movimientos.length;
+    
+    // Calcular movimientos de hoy
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayMovements = movimientos.filter(mov => {
+        const movDate = new Date(mov.fecha_entregado || mov.fecha);
+        movDate.setHours(0, 0, 0, 0);
+        return movDate.getTime() === today.getTime();
+    }).length;
+    
+    // Calcular alertas críticas (stock actual <= stock mínimo)
     const criticalAlerts = alertas.filter(a => {
-        const stockActual = parseInt(a.stock_actual);
-        const stockMinimo = parseInt(a.stock_minimo);
+        const stockActual = parseInt(a.stock_actual) || 0;
+        const stockMinimo = parseInt(a.stock_minimo) || 0;
         return stockActual <= stockMinimo;
     }).length;
 

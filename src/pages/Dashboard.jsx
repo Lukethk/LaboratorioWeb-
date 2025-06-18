@@ -391,6 +391,7 @@ const Dashboard = () => {
                                 <TrendAnalysis 
                                     solicitudes={solicitudes}
                                     movimientos={movimientos}
+                                    alertas={alertas}
                                 />
 
                                 <div className="bg-white p-6 rounded-xl shadow-lg">
