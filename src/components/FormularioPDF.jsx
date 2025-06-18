@@ -109,7 +109,7 @@ export default function FormularioPDF({ data }) {
         <Document>
             <Page size="A4" style={styles.page}>
                 <View style={styles.innerBox}>
-                    {/* Encabezado con logo a la derecha */}
+                   
                     <View style={styles.headerContainer}>
                         <View style={styles.headerText}>
                             <Text style={styles.title}>UNIVERSIDAD PRIVADA DEL VALLE</Text>
@@ -141,7 +141,7 @@ export default function FormularioPDF({ data }) {
 
                     </View>
 
-                    {/* Justificación */}
+                    
                     <Text style={styles.blockTitle}>
                         Destino y justificación de la solicitud efectuada
                     </Text>
@@ -149,7 +149,7 @@ export default function FormularioPDF({ data }) {
                         <Text>{justificacion}</Text>
                     </View>
 
-                    {/* Tabla de ítems */}
+                   
                     <View style={styles.table}>
                         <View style={[styles.tableRow, styles.tableHeader]}>
                             <Text style={styles.cell}>CANT.</Text>
@@ -177,20 +177,20 @@ export default function FormularioPDF({ data }) {
                         <Text>Literal: {valorLiteral}</Text>
                     </View>
 
-                    {/* Observaciones */}
+                   
                     <Text style={styles.blockTitle}>OBSERVACIONES</Text>
                     <View style={styles.observationsBox}>
                         <Text>{observaciones}</Text>
                     </View>
 
-                    {/* Firmas */}
+                   
                     <View style={styles.signatures}>
                         <Text style={styles.signatureBox}>Responsable Unidad Solicitante</Text>
                         <Text style={styles.signatureBox}>Almacenes / Presupuestos</Text>
                         <Text style={styles.signatureBox}>Rector / Vicerrector</Text>
                     </View>
 
-                    {/* Pie de página */}
+                   
                     <Text style={styles.footer}>Código: RE-10-DIR-007 Versión 2.0</Text>
                 </View>
             </Page>

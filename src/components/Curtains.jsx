@@ -9,7 +9,7 @@ const Curtains = ({ isClosing, onCloseComplete }) => {
             setClosing(true);
             const timeout = setTimeout(() => {
                 if (onCloseComplete) onCloseComplete();
-            }, 1000); // Duración exacta de la animación en el CSS
+            }, 1000); 
 
             return () => clearTimeout(timeout);
         }

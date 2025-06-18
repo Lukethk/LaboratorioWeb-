@@ -66,7 +66,7 @@ const FormularioEstudiantes = ({ solicitud }) => {
 
         } catch (error) {
             console.error('Error al generar el PDF:', error);
-            // Mostrar notificación de error
+            
             addNotification({
                 type: 'error',
                 title: 'Error al generar el formulario',
