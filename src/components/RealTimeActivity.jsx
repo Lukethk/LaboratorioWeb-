@@ -19,59 +19,46 @@ const RealTimeActivity = ({ solicitudes, movimientos, alertas }) => {
     const generateRecentActivity = () => {
         const activities = [];
 
-        // Actividad de solicitudes recientes
-        solicitudes.slice(0, 5).forEach((solicitud, index) => {
+        solicitudes.slice(0, 3).forEach((solicitud, index) => {
             activities.push({
                 id: `solicitud-${index}`,
                 type: 'solicitud',
                 title: `Solicitud ${solicitud.id || index + 1}`,
                 description: `Estado: ${solicitud.estado}`,
-                time: getRandomTimeAgo(),
+                time: 'Reciente',
                 priority: solicitud.estado === 'Pendiente' ? 'high' : 'normal'
             });
         });
 
-        // Actividad de movimientos recientes
-        movimientos.slice(0, 5).forEach((movimiento, index) => {
+        movimientos.slice(0, 3).forEach((movimiento, index) => {
             activities.push({
                 id: `movimiento-${index}`,
                 type: 'movimiento',
                 title: `${movimiento.tipo_movimiento} de ${movimiento.insumo_nombre}`,
                 description: `${movimiento.cantidad} unidades`,
-                time: getRandomTimeAgo(),
+                time: 'Reciente',
                 priority: 'normal'
             });
         });
 
-        // Actividad de alertas recientes
-        alertas.slice(0, 3).forEach((alerta, index) => {
+        alertas.slice(0, 2).forEach((alerta, index) => {
             activities.push({
                 id: `alerta-${index}`,
                 type: 'alerta',
                 title: `Alerta de Stock: ${alerta.insumo_nombre}`,
                 description: `Stock actual: ${alerta.stock_actual}`,
-                time: getRandomTimeAgo(),
+                time: 'Reciente',
                 priority: 'high'
             });
         });
 
-        // Ordenar por tiempo (más reciente primero)
-        activities.sort((a, b) => new Date(b.time) - new Date(a.time));
-        setRecentActivity(activities.slice(0, 8));
-    };
+        activities.sort((a, b) => {
+            if (a.priority === 'high' && b.priority !== 'high') return -1;
+            if (b.priority === 'high' && a.priority !== 'high') return 1;
+            return 0;
+        });
 
-    const getRandomTimeAgo = () => {
-        const times = [
-            'Hace 2 minutos',
-            'Hace 5 minutos',
-            'Hace 10 minutos',
-            'Hace 15 minutos',
-            'Hace 30 minutos',
-            'Hace 1 hora',
-            'Hace 2 horas',
-            'Hace 3 horas'
-        ];
-        return times[Math.floor(Math.random() * times.length)];
+        setRecentActivity(activities.slice(0, 8));
     };
 
     const getActivityIcon = (type) => {
@@ -103,7 +90,6 @@ const RealTimeActivity = ({ solicitudes, movimientos, alertas }) => {
         return <span className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded-full">Normal</span>;
     };
 
-    // Calcular estadísticas en tiempo real
     const activeSolicitudes = solicitudes.filter(s => s.estado === 'Pendiente' || s.estado === 'Aprobada').length;
     const todayMovements = movimientos.length;
     const criticalAlerts = alertas.filter(a => {
@@ -122,7 +108,6 @@ const RealTimeActivity = ({ solicitudes, movimientos, alertas }) => {
                 </div>
             </div>
 
-            {/* Estadísticas en tiempo real */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <div className="text-center p-3 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg">
                     <div className="text-lg font-bold text-blue-600">{activeSolicitudes}</div>
@@ -152,43 +137,49 @@ const RealTimeActivity = ({ solicitudes, movimientos, alertas }) => {
                 </div>
             </div>
 
-            {/* Lista de actividad reciente */}
             <div>
                 <h4 className="font-semibold text-[#592644] mb-4 border-b border-gray-200 pb-2">
                     Actividad Reciente
                 </h4>
                 <div className="space-y-3 max-h-96 overflow-y-auto">
-                    {recentActivity.map((activity) => (
-                        <div 
-                            key={activity.id}
-                            className={`flex items-start gap-3 p-3 rounded-lg transition-all duration-200 hover:bg-gray-50 ${
-                                activity.priority === 'high' ? 'border-l-4 border-red-500 bg-red-50' : ''
-                            }`}
-                        >
-                            <div className={`bg-white p-2 rounded-full shadow-sm ${getActivityColor(activity.type, activity.priority)}`}>
-                                <i className={`fas ${getActivityIcon(activity.type)}`}></i>
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <div className="flex items-start justify-between">
-                                    <div className="flex-1">
-                                        <p className="text-sm font-medium text-gray-900 truncate">
-                                            {activity.title}
-                                        </p>
-                                        <p className="text-xs text-gray-500 mt-1">
-                                            {activity.description}
-                                        </p>
-                                    </div>
-                                    <div className="flex items-center gap-2 ml-2">
-                                        {getPriorityBadge(activity.priority)}
-                                    </div>
+                    {recentActivity.length > 0 ? (
+                        recentActivity.map((activity) => (
+                            <div 
+                                key={activity.id}
+                                className={`flex items-start gap-3 p-3 rounded-lg transition-all duration-200 hover:bg-gray-50 ${
+                                    activity.priority === 'high' ? 'border-l-4 border-red-500 bg-red-50' : ''
+                                }`}
+                            >
+                                <div className={`bg-white p-2 rounded-full shadow-sm ${getActivityColor(activity.type, activity.priority)}`}>
+                                    <i className={`fas ${getActivityIcon(activity.type)}`}></i>
                                 </div>
-                                <p className="text-xs text-gray-400 mt-2">
-                                    <i className="fas fa-clock mr-1"></i>
-                                    {activity.time}
-                                </p>
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-start justify-between">
+                                        <div className="flex-1">
+                                            <p className="text-sm font-medium text-gray-900 truncate">
+                                                {activity.title}
+                                            </p>
+                                            <p className="text-xs text-gray-500 mt-1">
+                                                {activity.description}
+                                            </p>
+                                        </div>
+                                        <div className="flex items-center gap-2 ml-2">
+                                            {getPriorityBadge(activity.priority)}
+                                        </div>
+                                    </div>
+                                    <p className="text-xs text-gray-400 mt-2">
+                                        <i className="fas fa-clock mr-1"></i>
+                                        {activity.time}
+                                    </p>
+                                </div>
                             </div>
+                        ))
+                    ) : (
+                        <div className="text-center py-8 text-gray-500">
+                            <i className="fas fa-info-circle text-2xl mb-2"></i>
+                            <p>No hay actividad reciente</p>
                         </div>
-                    ))}
+                    )}
                 </div>
             </div>
         </div>

@@ -308,40 +308,12 @@ const Dashboard = () => {
         .sort((a, b) => b.cantidad - a.cantidad)
         .slice(0, 5);
 
-    // Actividad reciente simulada
-    const actividadReciente = [
-        {
-            type: 'solicitud',
-            title: 'Nueva solicitud de laboratorio',
-            description: 'Solicitud #1234 para el laboratorio de Química',
-            time: 'Hace 2 horas'
-        },
-        {
-            type: 'insumo',
-            title: 'Stock actualizado',
-            description: 'Reactivo X aumentó de 50 a 75 unidades',
-            time: 'Hace 4 horas'
-        },
-        {
-            type: 'alerta',
-            title: 'Alerta de stock crítico',
-            description: 'Reactivo Y está por debajo del mínimo',
-            time: 'Hace 6 horas'
-        },
-        {
-            type: 'movimiento',
-            title: 'Préstamo registrado',
-            description: 'Se prestaron 10 unidades de Reactivo Z',
-            time: 'Hace 8 horas'
-        }
-    ];
-
     return (
         <div className="flex flex-col lg:flex-row bg-gray-50 h-screen overflow-hidden">
             <Sidebar />
             <main className={`flex-1 p-4 sm:p-6 transition-all duration-300 overflow-y-auto ${isSidebarOpen ? 'lg:ml-60' : 'lg:ml-20'}`}>
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6">
-                    <h2 className="text-xl md:text-2xl font-bold text-black mb-4 lg:mb-0">Dashboard de Gestión de Laboratorio</h2>
+                    <h2 className="text-xl md:text-2xl font-bold text-black mb-4 lg:mb-0"> Gestión de Laboratorio</h2>
                 </div>
 
                 {loading ? (
@@ -350,7 +322,6 @@ const Dashboard = () => {
                     <p className="text-red-500">{error}</p>
                 ) : (
                     <>
-                        {/* Métricas principales mejoradas */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 mb-8">
                             <Card
                                 title="Total Insumos"
@@ -358,8 +329,6 @@ const Dashboard = () => {
                                 subtitle="Insumos del laboratorio"
                                 redirectTo="/Supplies"
                                 icon="flask"
-                                trend="up"
-                                trendValue="+5%"
                             />
                             <Card
                                 title="Stock Crítico"
@@ -367,20 +336,15 @@ const Dashboard = () => {
                                 subtitle="Requieren atención inmediata"
                                 redirectTo="/Reportes"
                                 icon="exclamation-triangle"
-                                trend="down"
-                                trendValue="-2%"
                             />
                             <Card
                                 title="Solicitudes Completadas"
                                 value={solicitudesCompletadas}
                                 subtitle="Laboratorios finalizados"
                                 icon="check-circle"
-                                trend="up"
-                                trendValue="+12%"
                             />
                         </div>
 
-                        {/* Métricas secundarias */}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                             <MetricCard
                                 title="Tasa de Aprobación"
@@ -413,9 +377,7 @@ const Dashboard = () => {
                         </div>
 
                         <div className="flex flex-col xl:flex-row gap-8 pb-6">
-                            {/* Sección principal */}
                             <section className="flex flex-col gap-6 w-full xl:w-2/3">
-                                {/* Gráficos principales */}
                                 <div className="bg-white p-6 rounded-xl shadow-lg">
                                     <h3 className="text-xl font-bold text-[#592644] mb-4">Análisis de Rendimiento</h3>
                                     <GraficosDashboard 
@@ -426,13 +388,11 @@ const Dashboard = () => {
                                     />
                                 </div>
 
-                                {/* Análisis de Tendencias */}
                                 <TrendAnalysis 
                                     solicitudes={solicitudes}
                                     movimientos={movimientos}
                                 />
 
-                                {/* Alertas */}
                                 <div className="bg-white p-6 rounded-xl shadow-lg">
                                     <h3 className="text-xl font-bold text-[#592644] mb-4">
                                         Alertas del Sistema 
@@ -445,7 +405,6 @@ const Dashboard = () => {
                                     </div>
                                 </div>
 
-                                {/* Top Insumos Utilizados */}
                                 <div className="bg-white p-6 rounded-xl shadow-lg">
                                     <h3 className="text-xl font-bold text-[#592644] mb-4">Insumos Más Utilizados</h3>
                                     <div className="space-y-3 max-h-[500px] overflow-y-auto">
@@ -470,22 +429,18 @@ const Dashboard = () => {
                                 </div>
                             </section>
 
-                            {/* Sidebar con información adicional */}
                             <aside className="w-full xl:w-1/3 space-y-6">
-                                {/* Estado de Solicitudes */}
                                 <div className="bg-white p-6 rounded-xl shadow-lg">
                                     <h3 className="text-lg font-bold text-[#592644] mb-4">Estado de Solicitudes</h3>
                                     <GraficoLab />
                                 </div>
 
-                                {/* Actividad Reciente */}
                                 <RealTimeActivity 
                                     solicitudes={solicitudes}
                                     movimientos={movimientos}
                                     alertas={alertas}
                                 />
 
-                                {/* Resumen Ejecutivo */}
                                 <ExecutiveSummary 
                                     insumos={insumos}
                                     solicitudes={solicitudes}
