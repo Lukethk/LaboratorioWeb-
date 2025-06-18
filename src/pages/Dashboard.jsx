@@ -412,7 +412,7 @@ const Dashboard = () => {
                                         {topInsumosUtilizados.map((insumo, index) => (
                                             <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 bg-[#592644] text-white rounded-full flex items-center justify-center text-sm font-bold">
+                                                    <div className="w-10 h-13 bg-[#592644] text-white rounded-full flex items-center justify-center text-sm font-bold">
                                                         {index + 1}
                                                     </div>
                                                     <div>
