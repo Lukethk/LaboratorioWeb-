@@ -293,9 +293,6 @@ const SolicitudesUso = () => {
                 } : s
             ));
 
-            alert(`Devolución registrada exitosamente! 
-Insumos no devueltos: ${data.insumos_no_devueltos.length}`);
-
             closeModal();
         } catch (error) {
             console.error('Error al confirmar devolución:', error);

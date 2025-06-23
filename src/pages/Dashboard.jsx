@@ -133,21 +133,17 @@ const AlertsTable = ({ alerts, error, reload }) => {
         const stockMinimo = parseInt(alerta.stock_minimo);
         const stockMaximo = parseInt(alerta.stock_maximo);
         
-        // Si el stock está por debajo del mínimo
         if (stockActual <= stockMinimo) {
-            return "from-red-400/80 to-red-300/80"; // Rojo más suave
+            return "from-red-400/80 to-red-300/80";
         }
-        // Si el stock está por encima del máximo
         else if (stockActual >= stockMaximo) {
-            return "from-amber-400/80 to-amber-300/80"; // Amarillo más suave
+            return "from-amber-400/80 to-amber-300/80";
         }
-        // Si el stock está en un nivel normal pero cerca del mínimo
         else if (stockActual <= (stockMinimo * 1.2)) {
-            return "from-orange-400/80 to-orange-300/80"; // Naranja más suave
+            return "from-orange-400/80 to-orange-300/80";
         }
-        // Si el stock está en un nivel normal
         else {
-            return "from-emerald-400/80 to-emerald-300/80"; // Verde más suave
+            return "from-emerald-400/80 to-emerald-300/80";
         }
     };
 
@@ -241,28 +237,31 @@ const Dashboard = () => {
             setLoading(true);
             setError(null);
 
-            const [insumosResponse, alertasResponse, solicitudesResponse, movimientosResponse] = await Promise.all([
+            const [insumosResponse, alertasResponse, solicitudesDocentesResponse, solicitudesEstudiantesResponse, movimientosResponse] = await Promise.all([
                 fetch(`${API_URL}/Insumos`),
                 fetch(`${API_URL}/alertas`),
                 fetch(`${API_URL}/solicitudes-uso`),
+                fetch(`${API_URL}/estudiantes/solicitudes`),
                 fetch(`${API_URL}/Movimientos-inventario`)
             ]);
 
             if (!insumosResponse.ok) throw new Error("Error al obtener insumos");
             if (!alertasResponse.ok) throw new Error("Error al obtener alertas");
-            if (!solicitudesResponse.ok) throw new Error("Error al obtener solicitudes");
+            if (!solicitudesDocentesResponse.ok) throw new Error("Error al obtener solicitudes de docentes");
+            if (!solicitudesEstudiantesResponse.ok) throw new Error("Error al obtener solicitudes de estudiantes");
             if (!movimientosResponse.ok) throw new Error("Error al obtener movimientos");
 
-            const [insumosData, alertasData, solicitudesData, movimientosData] = await Promise.all([
+            const [insumosData, alertasData, solicitudesDocentesData, solicitudesEstudiantesData, movimientosData] = await Promise.all([
                 insumosResponse.json(),
                 alertasResponse.json(),
-                solicitudesResponse.json(),
+                solicitudesDocentesResponse.json(),
+                solicitudesEstudiantesResponse.json(),
                 movimientosResponse.json()
             ]);
 
             setInsumos(insumosData);
             setAlertas(alertasData);
-            setSolicitudes(solicitudesData);
+            setSolicitudes([...solicitudesDocentesData, ...solicitudesEstudiantesData]);
             setMovimientos(movimientosData.data || []);
         } catch (error) {
             setError(error.message);
@@ -275,7 +274,6 @@ const Dashboard = () => {
         fetchData();
     }, []);
 
-    // Cálculos de métricas avanzadas
     const totalInsumos = insumos.length;
     const stockCritico = insumos.filter(insumo => {
         const stockActual = parseInt(insumo.stock_actual);
@@ -288,11 +286,9 @@ const Dashboard = () => {
     const solicitudesAprobadas = solicitudes.filter(s => s.estado === 'Aprobada').length;
     const solicitudesRechazadas = solicitudes.filter(s => s.estado === 'Rechazada').length;
 
-    // Métricas de eficiencia
     const tasaAprobacion = solicitudes.length > 0 ? ((solicitudesAprobadas + solicitudesCompletadas) / solicitudes.length * 100).toFixed(1) : 0;
     const tasaCompletacion = solicitudes.length > 0 ? (solicitudesCompletadas / solicitudes.length * 100).toFixed(1) : 0;
 
-    // Insumos más utilizados (basado en movimientos)
     const insumosUtilizados = movimientos.reduce((acc, mov) => {
         if (mov.tipo_movimiento === 'PRESTAMO') {
             const insumoKey = mov.insumo_nombre;
@@ -412,7 +408,7 @@ const Dashboard = () => {
                                         {topInsumosUtilizados.map((insumo, index) => (
                                             <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-13 bg-[#592644] text-white rounded-full flex items-center justify-center text-sm font-bold">
+                                                    <div className="w-10 h-19 bg-[#592644] text-white rounded-full flex items-center justify-center text-sm font-bold">
                                                         {index + 1}
                                                     </div>
                                                     <div>

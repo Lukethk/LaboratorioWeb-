@@ -34,7 +34,6 @@ const Login = () => {
                 return;
             }
 
-            // Guardar el token y la autenticación
             sessionStorage.setItem("auth", "true");
             sessionStorage.setItem("token", data.token);
             

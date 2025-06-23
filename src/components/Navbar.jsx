@@ -143,7 +143,6 @@ const ProfileMenu = ({ openMenu, setOpenMenu, gestor }) => {
 };
 
 const SEARCH_ITEMS = [
-    // Páginas principales
     { type: 'page', name: 'Dashboard', path: '/dashboard' },
     { type: 'page', name: 'Agenda', path: '/agenda' },
     { type: 'page', name: 'Solicitudes', path: '/solicitudes' },
@@ -153,24 +152,19 @@ const SEARCH_ITEMS = [
     { type: 'page', name: 'Reportes', path: '/reportes' },
     { type: 'page', name: 'Movimientos de Inventario', path: '/MovimientosdeInventario' },
     
-    // Acciones de Suministros
     { type: 'action', name: 'Agregar nuevo insumo', description: 'Abre el modal para agregar un insumo en Suministros', action: 'openAddInsumoModal', page: '/supplies' },
     { type: 'action', name: 'Editar insumo', description: 'Abre el modal para editar un insumo existente', action: 'openEditInsumoModal', page: '/supplies' },
     
-    // Acciones de Docentes
     { type: 'action', name: 'Asignaciones de Laboratorios', description: 'Abrir el modal de asignación de laboratorios en Docentes', action: 'abrirModalAsignaciones', page: '/docentes' },
     { type: 'action', name: 'Completar solicitud docente', description: 'Marcar una solicitud como completada', action: 'completarSolicitudDocente', page: '/docentes' },
     
-    // Acciones de Alumnos
     { type: 'action', name: 'Ver detalles alumno', description: 'Ver los detalles de una solicitud de alumno', action: 'verDetallesAlumno', page: '/alumnos' },
     
-    // Acciones de Solicitudes
     { type: 'action', name: 'Crear nueva solicitud', description: 'Crear una nueva solicitud de insumos', action: 'crearSolicitud', page: '/solicitudes' },
     { type: 'action', name: 'Editar solicitud', description: 'Editar una solicitud existente', action: 'editarSolicitud', page: '/solicitudes' },
     { type: 'action', name: 'Ver detalles solicitud', description: 'Ver los detalles de una solicitud', action: 'verDetallesSolicitud', page: '/solicitudes' },
     { type: 'action', name: 'Marcar como completada', description: 'Marcar una solicitud como completada', action: 'marcarCompletada', page: '/solicitudes' },
     
-    // Acciones de Movimientos de Inventario
     { type: 'action', name: 'Registrar entrada', description: 'Registrar una entrada de inventario', action: 'registrarEntrada', page: '/MovimientosdeInventario' },
     { type: 'action', name: 'Registrar salida', description: 'Registrar una salida de inventario', action: 'registrarSalida', page: '/MovimientosdeInventario' },
     { type: 'action', name: 'Ver historial', description: 'Ver el historial de movimientos', action: 'verHistorial', page: '/MovimientosdeInventario' }

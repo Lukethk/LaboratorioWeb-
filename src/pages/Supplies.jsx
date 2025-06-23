@@ -91,7 +91,6 @@ const Supplies = () => {
             console.log('Datos de insumos:', insumosData);
             console.log('Datos de mantenimiento:', mantenimientoData);
 
-            // Actualizar el estado de los insumos
             const insumosActualizados = insumosData.map(insumo => {
                 const enMantenimiento = mantenimientoData.find(m => m.id_insumo === insumo.id_insumo);
                 const cantidadMantenimiento = enMantenimiento ? enMantenimiento.cantidad : 0;
@@ -300,14 +299,12 @@ const Supplies = () => {
 
     const handleConfirmarQuitarMantenimiento = async () => {
         try {
-            // Primero obtenemos el mantenimiento activo para este insumo
             const mantenimientoResponse = await fetch(`${API_URL}/mantenimiento/activos`);
             if (!mantenimientoResponse.ok) {
                 throw new Error('Error al obtener mantenimientos activos');
             }
             const mantenimientosActivos = await mantenimientoResponse.json();
             
-            // Buscamos el mantenimiento específico para este insumo
             const mantenimiento = mantenimientosActivos.find(m => m.id_insumo === modalQuitarMantenimiento.id_insumo);
             
             if (!mantenimiento) {
@@ -320,7 +317,6 @@ const Supplies = () => {
                 observaciones: observacionesQuitarMantenimiento
             });
 
-            // Usamos el id_mantenimiento en lugar de id
             const response = await fetch(`${API_URL}/mantenimiento/${mantenimiento.id_mantenimiento}/finalizar`, {
                 method: 'PATCH',
                 headers: {
@@ -340,7 +336,7 @@ const Supplies = () => {
 
             showMensaje('Insumo quitado de mantenimiento correctamente');
             setModalQuitarMantenimiento(null);
-            await fetchInsumos(); // Esperamos a que se actualice la lista
+            await fetchInsumos();
         } catch (error) {
             console.error('Error detallado:', error);
             showMensaje(error.message || 'Error al quitar de mantenimiento');

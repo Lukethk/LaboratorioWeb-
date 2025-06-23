@@ -61,16 +61,13 @@ const MovimientosDeInventario = () => {
                 }
             });
 
-            // Calcular resumen general
             const resumenCalculado = response.data.data.reduce((acc, mov) => {
-                // Contar totales
                 if (mov.tipo_movimiento === 'PRESTAMO') {
                     acc.totalPrestamos += mov.cantidad;
                 } else {
                     acc.totalDevoluciones += mov.cantidad;
                 }
 
-                // Agrupar por insumo
                 const insumoKey = mov.insumo_nombre;
                 if (!acc.insumos[insumoKey]) {
                     acc.insumos[insumoKey] = {
@@ -95,7 +92,6 @@ const MovimientosDeInventario = () => {
                 insumos: {}
             });
 
-            // Convertir insumos a array y ordenar
             const insumosArray = Object.values(resumenCalculado.insumos);
             const insumosMasPrestados = [...insumosArray].sort((a, b) => b.prestamos - a.prestamos);
             const insumosMasDevoluciones = [...insumosArray].sort((a, b) => b.devoluciones - a.devoluciones);
@@ -111,7 +107,6 @@ const MovimientosDeInventario = () => {
                 insumosMasMovimientos: insumosMasMovimientos.slice(0, 3)
             });
 
-            // Agrupar movimientos por solicitud para la vista
             const movimientosAgrupados = response.data.data.reduce((acc, movimiento) => {
                 const solicitudId = movimiento.id_solicitud;
                 if (!acc[solicitudId]) {
@@ -154,7 +149,6 @@ const MovimientosDeInventario = () => {
     };
 
     const handleViewSolicitud = (solicitud) => {
-        // Asegurarse de que los movimientos estén ordenados por fecha
         const solicitudOrdenada = {
             ...solicitud,
             movimientos: [...solicitud.movimientos].sort((a, b) => 
@@ -190,7 +184,6 @@ const MovimientosDeInventario = () => {
             }
         }
 
-        // Botón Anterior
         pages.push(
             <button
                 key="prev"
@@ -206,7 +199,6 @@ const MovimientosDeInventario = () => {
             </button>
         );
 
-        // Primera página
         if (startPage > 1) {
             pages.push(
                 <button
@@ -226,7 +218,6 @@ const MovimientosDeInventario = () => {
             }
         }
 
-        // Páginas visibles
         for (let i = startPage; i <= endPage; i++) {
             pages.push(
                 <button
@@ -243,7 +234,6 @@ const MovimientosDeInventario = () => {
             );
         }
 
-        // Última página
         if (endPage < pagination.totalPages) {
             if (endPage < pagination.totalPages - 1) {
                 pages.push(<span key="ellipsis-end" className="px-2">...</span>);
@@ -263,7 +253,6 @@ const MovimientosDeInventario = () => {
             );
         }
 
-        // Botón Siguiente
         pages.push(
             <button
                 key="next"

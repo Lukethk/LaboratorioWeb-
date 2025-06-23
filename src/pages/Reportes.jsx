@@ -159,172 +159,234 @@ const Reportes = () => {
     return (
         <div className="flex flex-col lg:flex-row min-h-screen bg-gradient-to-r from-[#F4E1D2] to-[#592644]">
             <Sidebar />
-            <div className={`flex-1 p-4 md:p-6 bg-white shadow-xl rounded-xl mt-20 lg:mt-0 transition-all duration-300 ${isSidebarOpen ? 'lg:ml-60' : 'lg:ml-20'}`}>
-                <h2 className="text-xl md:text-2xl font-bold text-black mb-8">Reportes de Insumos</h2>
+            <div className={`flex-1 p-6 md:p-8 lg:p-10 bg-white shadow-xl rounded-xl mt-20 lg:mt-0 transition-all duration-300 ${isSidebarOpen ? 'lg:ml-60' : 'lg:ml-20'}`}>
+                <h2 className="text-2xl md:text-3xl font-bold text-black mb-10">Reportes de Insumos</h2>
 
-                <div className="flex flex-col sm:flex-row items-start justify-start gap-6 mt-6">
-                    <Card
-                        title="Atención Requerida"
-                        value={insumosCriticos.length}
-                        subtitle="Insumos Críticos"
-                        redirectTo="/Reportes"
-                    />
-                    <Card
-                        title="En Mantenimiento"
-                        value={cantidadTotalMantenimiento}
-                        subtitle="Cantidad de Insumos en Mantenimiento"
-                        redirectTo="/Reportes"
-                    />
-                </div>
-
-                <div className="mt-8 flex flex-col space-y-6">
-                    <div className="flex justify-start space-x-4">
-                        <button
-                            onClick={() => setActiveTab('criticos')}
-                            className={`px-6 py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 ${
-                                activeTab === 'criticos'
-                                    ? 'bg-[#592644] text-white shadow-lg'
-                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                            }`}
-                        >
-                            Insumos Críticos
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('mantenimiento')}
-                            className={`px-6 py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 ${
-                                activeTab === 'mantenimiento'
-                                    ? 'bg-[#592644] text-white shadow-lg'
-                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                            }`}
-                        >
-                            Insumos en Mantenimiento
-                        </button>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+                    <div className="lg:col-span-1">
+                        <div className="flex flex-col gap-6">
+                            <Card
+                                title="Atención Requerida"
+                                value={insumosCriticos.length}
+                                subtitle="Insumos Críticos"
+                                redirectTo="/Reportes"
+                            />
+                            <Card
+                                title="En Mantenimiento"
+                                value={cantidadTotalMantenimiento}
+                                subtitle="Cantidad de Insumos en Mantenimiento"
+                                redirectTo="/Reportes"
+                            />
+                        </div>
                     </div>
 
-                    <button
-                        onClick={generarPDF}
-                        className="w-full sm:w-[250px] flex items-center justify-center gap-2 bg-[#592644] hover:bg-[#4b1f3d] text-white font-semibold py-3 px-5 rounded-2xl shadow-lg transition-transform transform hover:scale-105 duration-300 ease-in-out"
-                    >
-                        <i className="fa fa-file-pdf text-xl"></i>
-                        <span className="text-sm sm:text-base">Generar Reporte PDF</span>
-                    </button>
-
-                    <div className="bg-white p-4 sm:p-8 rounded-lg overflow-y-auto max-h-[70vh]">
-                        {loading ? (
-                            <SkeletonReportes />
-                        ) : error ? (
-                            <div className="text-red-600">
-                                <p>Error al cargar los insumos: {error}</p>
-                                <button
-                                    onClick={fetchData}
-                                    className="mt-4 bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600 transition-all duration-300"
-                                >
-                                    Reintentar
-                                </button>
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {activeTab === 'criticos' ? (
-                                    insumosCriticos.map((insumo) => (
-                                        <div
-                                            key={insumo.id_insumo}
-                                            className="p-4 rounded-lg shadow-md relative bg-red-50 border-l-4 border-red-600 transform transition-all duration-300 hover:scale-105"
-                                        >
-                                            <span className="absolute top-0 right-0 inline-block px-3 py-1 text-xs font-semibold rounded-tr-lg rounded-bl-lg bg-red-100 text-red-800">
-                                                CRÍTICO
-                                            </span>
-                                            <h3 className="text-lg font-bold mb-2 text-red-800">
-                                                {insumo.nombre}
-                                            </h3>
-                                            <p className="text-sm mb-4 text-red-700">
-                                                {insumo.descripcion || "Sin descripción"}
-                                            </p>
-
-                                            <div className="flex justify-between mb-4">
-                                                <div className="text-center">
-                                                    <span className="block text-2xl font-bold text-red-800">
-                                                        {insumo.stock_actual}
-                                                    </span>
-                                                    <span className="text-xs text-red-600">
-                                                        Stock Actual
-                                                    </span>
-                                                </div>
-                                                <div className="text-center">
-                                                    <span className="block text-2xl font-bold text-red-800">
-                                                        {insumo.stock_minimo}
-                                                    </span>
-                                                    <span className="text-xs text-red-600">
-                                                        Stock Mínimo
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            <button
-                                                onClick={() => setModalInsumo(insumo)}
-                                                className="w-full py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
-                                            >
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    <div className="lg:col-span-2">
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                            <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-2xl p-8 shadow-lg border border-red-200 relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-24 h-24 bg-red-200/30 rounded-full -translate-y-12 translate-x-12"></div>
+                                <div className="relative z-10 h-full flex flex-col justify-between">
+                                    <div>
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <div className="p-3 bg-red-500/20 rounded-xl">
+                                                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
                                                 </svg>
-                                                Ver Detalles
-                                            </button>
+                                            </div>
+                                            <h3 className="text-xl font-bold text-red-800">Insumos Críticos</h3>
                                         </div>
-                                    ))
-                                ) : (
-                                    <>
-                                        {insumosEnMantenimiento.map((insumo) => {
-                                            const insumoCompleto = insumos.find(i => i.id_insumo === insumo.id_insumo);
-                                            if (!insumoCompleto) return null;
+                                        <p className="text-sm text-red-700 leading-relaxed mb-4">
+                                            Los insumos críticos son aquellos materiales o equipos del laboratorio que han alcanzado su <strong>stock mínimo</strong>. 
+                                            Esto significa que están en riesgo de agotarse y podrían interrumpir las actividades académicas. 
+                                            Requieren <strong>atención inmediata</strong> para garantizar la continuidad de las prácticas de laboratorio.
+                                        </p>
+                                    </div>
+                                    <div className="p-3 bg-red-200/50 rounded-lg">
+                                        <p className="text-xs text-red-800 font-medium">
+                                            💡 <strong>Acción requerida:</strong> Solicitar reposición urgente al departamento de compras
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
 
-                                            return (
-                                                <div
-                                                    key={insumo.id_insumo}
-                                                    className="p-4 rounded-lg shadow-md relative bg-blue-50 border-l-4 border-blue-600 transform transition-all duration-300 hover:scale-105"
-                                                >
-                                                    <span className="absolute top-0 right-0 inline-block px-3 py-1 text-xs font-semibold rounded-tr-lg rounded-bl-lg bg-blue-100 text-blue-800">
-                                                        EN MANTENIMIENTO
-                                                    </span>
-                                                    <h3 className="text-lg font-bold mb-2 text-blue-800">
-                                                        {insumoCompleto.nombre}
-                                                    </h3>
-                                                    <p className="text-sm mb-4 text-blue-700">
-                                                        {insumoCompleto.descripcion || "Sin descripción"}
-                                                    </p>
+                            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-8 shadow-lg border border-blue-200 relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-24 h-24 bg-blue-200/30 rounded-full -translate-y-12 translate-x-12"></div>
+                                <div className="relative z-10 h-full flex flex-col justify-between">
+                                    <div>
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <div className="p-3 bg-blue-500/20 rounded-xl">
+                                                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                </svg>
+                                            </div>
+                                            <h3 className="text-xl font-bold text-blue-800">Insumos en Mantenimiento</h3>
+                                        </div>
+                                        <p className="text-sm text-blue-700 leading-relaxed mb-4">
+                                            Los insumos en mantenimiento son equipos, instrumentos o materiales que están siendo <strong>reparados, calibrados o sometidos a mantenimiento preventivo</strong>. 
+                                            Durante este período, no están disponibles para uso en las prácticas de laboratorio. 
+                                            El sistema rastrea estos elementos para <strong>planificar actividades alternativas</strong> y mantener informados a docentes y estudiantes.
+                                        </p>
+                                    </div>
+                                    <div className="p-3 bg-blue-200/50 rounded-lg">
+                                        <p className="text-xs text-blue-800 font-medium">
+                                            ⚙️ <strong>Estado:</strong> En proceso de revisión técnica o calibración
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-                                                    <div className="flex justify-between mb-4">
-                                                        <div className="text-center">
-                                                            <span className="block text-2xl font-bold text-blue-800">
-                                                                {insumo.cantidad}
-                                                            </span>
-                                                            <span className="text-xs text-blue-600">
-                                                                Cantidad en Mantenimiento
-                                                            </span>
-                                                        </div>
-                                                        <div className="text-center">
-                                                            <span className="block text-2xl font-bold text-blue-800">
-                                                                {insumoCompleto.stock_actual}
-                                                            </span>
-                                                            <span className="text-xs text-blue-600">
-                                                                Stock Disponible
-                                                            </span>
-                                                        </div>
+                <div className="mb-10">
+                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                        <div className="flex flex-wrap gap-4">
+                            <button
+                                onClick={() => setActiveTab('criticos')}
+                                className={`px-8 py-4 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 ${
+                                    activeTab === 'criticos'
+                                        ? 'bg-[#592644] text-white shadow-lg'
+                                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                }`}
+                            >
+                                Insumos Críticos
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('mantenimiento')}
+                                className={`px-8 py-4 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 ${
+                                    activeTab === 'mantenimiento'
+                                        ? 'bg-[#592644] text-white shadow-lg'
+                                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                }`}
+                            >
+                                Insumos en Mantenimiento
+                            </button>
+                        </div>
+
+                        <button
+                            onClick={generarPDF}
+                            className="w-full lg:w-auto flex items-center justify-center gap-3 bg-[#592644] hover:bg-[#4b1f3d] text-white font-semibold py-4 px-8 rounded-2xl shadow-lg transition-transform transform hover:scale-105 duration-300 ease-in-out"
+                        >
+                            <i className="fa fa-file-pdf text-xl"></i>
+                            <span className="text-base">Generar Reporte PDF</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div className="bg-white p-6 lg:p-8 rounded-2xl shadow-lg overflow-y-auto max-h-[70vh]">
+                    {loading ? (
+                        <SkeletonReportes />
+                    ) : error ? (
+                        <div className="text-red-600 text-center py-8">
+                            <p className="text-lg mb-4">Error al cargar los insumos: {error}</p>
+                            <button
+                                onClick={fetchData}
+                                className="bg-red-500 text-white py-3 px-6 rounded-xl hover:bg-red-600 transition-all duration-300"
+                            >
+                                Reintentar
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+                            {activeTab === 'criticos' ? (
+                                insumosCriticos.map((insumo) => (
+                                    <div
+                                        key={insumo.id_insumo}
+                                        className="p-6 rounded-2xl shadow-lg relative bg-red-50 border-l-4 border-red-600 transform transition-all duration-300 hover:scale-105 hover:shadow-xl"
+                                    >
+                                        <span className="absolute top-4 right-4 inline-block px-4 py-2 text-sm font-semibold rounded-xl bg-red-100 text-red-800">
+                                            CRÍTICO
+                                        </span>
+                                        <h3 className="text-xl font-bold mb-4 text-red-800 pr-20">
+                                            {insumo.nombre}
+                                        </h3>
+                                        <p className="text-sm mb-6 text-red-700 leading-relaxed">
+                                            {insumo.descripcion || "Sin descripción"}
+                                        </p>
+
+                                        <div className="flex justify-between mb-6">
+                                            <div className="text-center">
+                                                <span className="block text-3xl font-bold text-red-800">
+                                                    {insumo.stock_actual}
+                                                </span>
+                                                <span className="text-sm text-red-600 font-medium">
+                                                    Stock Actual
+                                                </span>
+                                            </div>
+                                            <div className="text-center">
+                                                <span className="block text-3xl font-bold text-red-800">
+                                                    {insumo.stock_minimo}
+                                                </span>
+                                                <span className="text-sm text-red-600 font-medium">
+                                                    Stock Mínimo
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <button
+                                            onClick={() => setModalInsumo(insumo)}
+                                            className="w-full py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl transition-colors duration-200 flex items-center justify-center gap-2 font-medium"
+                                        >
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                            </svg>
+                                            Ver Detalles
+                                        </button>
+                                    </div>
+                                ))
+                            ) : (
+                                <>
+                                    {insumosEnMantenimiento.map((insumo) => {
+                                        const insumoCompleto = insumos.find(i => i.id_insumo === insumo.id_insumo);
+                                        if (!insumoCompleto) return null;
+
+                                        return (
+                                            <div
+                                                key={insumo.id_insumo}
+                                                className="p-6 rounded-2xl shadow-lg relative bg-blue-50 border-l-4 border-blue-600 transform transition-all duration-300 hover:scale-105 hover:shadow-xl"
+                                            >
+                                                <span className="absolute top-4 right-4 inline-block px-4 py-2 text-sm font-semibold rounded-xl bg-blue-100 text-blue-800">
+                                                    EN MANTENIMIENTO
+                                                </span>
+                                                <h3 className="text-xl font-bold mb-4 text-blue-800 pr-24">
+                                                    {insumoCompleto.nombre}
+                                                </h3>
+                                                <p className="text-sm mb-6 text-blue-700 leading-relaxed">
+                                                    {insumoCompleto.descripcion || "Sin descripción"}
+                                                </p>
+
+                                                <div className="flex justify-between mb-6">
+                                                    <div className="text-center">
+                                                        <span className="block text-3xl font-bold text-blue-800">
+                                                            {insumo.cantidad}
+                                                        </span>
+                                                        <span className="text-sm text-blue-600 font-medium">
+                                                            Cantidad en Mantenimiento
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-center">
+                                                        <span className="block text-3xl font-bold text-blue-800">
+                                                            {insumoCompleto.stock_actual}
+                                                        </span>
+                                                        <span className="text-sm text-blue-600 font-medium">
+                                                            Stock Disponible
+                                                        </span>
                                                     </div>
                                                 </div>
-                                            );
-                                        })}
-                                    </>
-                                )}
-                            </div>
-                        )}
-                    </div>
+                                            </div>
+                                        );
+                                    })}
+                                </>
+                            )}
+                        </div>
+                    )}
                 </div>
 
-                {/* Sección de Historial de Mantenimientos - Solo visible cuando se muestran insumos en mantenimiento */}
                 {activeTab === 'mantenimiento' && historialMantenimientos.length > 0 && (
-                    <div className="mt-8">
-                        <h2 className="text-2xl font-semibold text-[#592644] mb-4">Historial de Mantenimientos</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="mt-12">
+                        <h2 className="text-2xl font-semibold text-[#592644] mb-8">Historial de Mantenimientos</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                             {historialMantenimientos.map((mantenimiento) => {
                                 const insumo = insumos.find(i => i.id_insumo === mantenimiento.id_insumo);
                                 if (!insumo) return null;
@@ -332,41 +394,45 @@ const Reportes = () => {
                                 return (
                                     <div 
                                         key={`historial-${mantenimiento.id_mantenimiento}`}
-                                        className="bg-gray-50 p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow border-l-4 border-gray-400"
+                                        className="bg-gray-50 p-6 rounded-2xl shadow-lg hover:shadow-xl transition-shadow border-l-4 border-gray-400"
                                     >
-                                        <div className="flex justify-between items-start">
+                                        <div className="space-y-4">
                                             <div>
-                                                <h3 className="font-semibold text-gray-800">{insumo.nombre}</h3>
-                                                <p className="text-sm text-gray-600 mt-1">
-                                                    Cantidad: <span className="font-medium">{mantenimiento.cantidad}</span>
-                                                </p>
-                                                <p className="text-sm text-gray-600">
-                                                    Fecha inicio: <span className="font-medium">
-                                                        {new Date(mantenimiento.fecha_inicio).toLocaleDateString()}
-                                                    </span>
-                                                </p>
-                                                {mantenimiento.fecha_fin && (
+                                                <h3 className="font-semibold text-gray-800 text-lg mb-2">{insumo.nombre}</h3>
+                                                <div className="space-y-2">
                                                     <p className="text-sm text-gray-600">
-                                                        Fecha fin: <span className="font-medium">
-                                                            {new Date(mantenimiento.fecha_fin).toLocaleDateString()}
+                                                        Cantidad: <span className="font-medium text-gray-800">{mantenimiento.cantidad}</span>
+                                                    </p>
+                                                    <p className="text-sm text-gray-600">
+                                                        Fecha inicio: <span className="font-medium text-gray-800">
+                                                            {new Date(mantenimiento.fecha_inicio).toLocaleDateString()}
                                                         </span>
                                                     </p>
-                                                )}
-                                                <p className="text-sm text-gray-600 mt-2">
-                                                    Estado: <span className={`font-medium ${
-                                                        mantenimiento.estado === 'Finalizado' 
-                                                            ? 'text-green-600' 
-                                                            : 'text-blue-600'
-                                                    }`}>
-                                                        {mantenimiento.estado}
-                                                    </span>
-                                                </p>
-                                                {mantenimiento.observaciones && (
-                                                    <p className="text-sm text-gray-600 mt-2">
-                                                        Observaciones: <span className="font-medium">{mantenimiento.observaciones}</span>
+                                                    {mantenimiento.fecha_fin && (
+                                                        <p className="text-sm text-gray-600">
+                                                            Fecha fin: <span className="font-medium text-gray-800">
+                                                                {new Date(mantenimiento.fecha_fin).toLocaleDateString()}
+                                                            </span>
+                                                        </p>
+                                                    )}
+                                                    <p className="text-sm text-gray-600">
+                                                        Estado: <span className={`font-medium ${
+                                                            mantenimiento.estado === 'Finalizado' 
+                                                                ? 'text-green-600' 
+                                                                : 'text-blue-600'
+                                                        }`}>
+                                                            {mantenimiento.estado}
+                                                        </span>
                                                     </p>
-                                                )}
+                                                </div>
                                             </div>
+                                            {mantenimiento.observaciones && (
+                                                <div className="pt-4 border-t border-gray-200">
+                                                    <p className="text-sm text-gray-600">
+                                                        <span className="font-medium">Observaciones:</span> {mantenimiento.observaciones}
+                                                    </p>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 );
@@ -376,48 +442,48 @@ const Reportes = () => {
                 )}
 
                 {modalInsumo && (
-                    <div className="fixed inset-0 flex justify-center items-center z-50 bg-opacity-40">
-                        <div className="bg-white rounded-[2rem] w-[95vw] max-w-2xl p-10 relative shadow-2xl">
-                            <div className="absolute top-10 right-8 bg-gray-100 px-5 py-1.5 rounded-full font-semibold text-xl shadow-lg text-[#592644]">
+                    <div className="fixed inset-0 flex justify-center items-center z-50 bg-black/50 backdrop-blur-sm p-4">
+                        <div className="bg-white rounded-3xl w-full max-w-4xl p-8 lg:p-12 relative shadow-2xl max-h-[90vh] overflow-y-auto">
+                            <div className="absolute top-6 right-6 bg-gray-100 px-6 py-2 rounded-full font-semibold text-lg shadow-lg text-[#592644]">
                                 {modalInsumo.ubicacion}
                             </div>
 
-                            <h2 className="text-4xl font-bold text-black mb-4 text-[#592644]">{modalInsumo.nombre}</h2>
+                            <h2 className="text-3xl lg:text-4xl font-bold text-black mb-6 text-[#592644] pr-32">{modalInsumo.nombre}</h2>
 
-                            <p className="text-lg font-medium text-gray-700 mb-10">
+                            <p className="text-lg font-medium text-gray-700 mb-12 leading-relaxed">
                                 {modalInsumo.descripcion}
                             </p>
 
-                            <div className="flex flex-col sm:flex-row gap-6 justify-center mb-12">
-                                <div className="bg-gray-200 rounded-2xl px-6 py-6 text-center flex-1 shadow-lg">
-                                    <p className="font-bold text-lg mb-1 text-[#592644]">TIPO</p>
-                                    <p className="text-base">{modalInsumo.tipo}</p>
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+                                <div className="bg-gray-100 rounded-2xl px-8 py-8 text-center shadow-lg">
+                                    <p className="font-bold text-lg mb-3 text-[#592644]">TIPO</p>
+                                    <p className="text-lg">{modalInsumo.tipo}</p>
                                 </div>
-                                <div className="bg-gray-200 rounded-2xl px-6 py-6 text-center flex-1 shadow-lg">
-                                    <p className="font-bold text-lg mb-1 text-[#592644]">UNIDAD MEDIDA</p>
-                                    <p className="text-base">{modalInsumo.unidad_medida}</p>
+                                <div className="bg-gray-100 rounded-2xl px-8 py-8 text-center shadow-lg">
+                                    <p className="font-bold text-lg mb-3 text-[#592644]">UNIDAD MEDIDA</p>
+                                    <p className="text-lg">{modalInsumo.unidad_medida}</p>
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-3 text-center gap-6 mb-12">
-                                <div>
-                                    <p className="font-bold text-sm mb-1">DISPONIBILIDAD ACTUAL</p>
-                                    <p className="text-4xl font-bold text-[#592644] mt-5">{modalInsumo.stock_actual}</p>
+                            <div className="grid grid-cols-1 md:grid-cols-3 text-center gap-8 mb-12">
+                                <div className="bg-gray-50 rounded-2xl p-6 shadow-lg">
+                                    <p className="font-bold text-sm mb-3 text-[#592644]">DISPONIBILIDAD ACTUAL</p>
+                                    <p className="text-4xl font-bold text-[#592644]">{modalInsumo.stock_actual}</p>
                                 </div>
-                                <div>
-                                    <p className="font-bold text-sm mb-1">DISPONIBILIDAD MINIMA</p>
-                                    <p className="text-4xl font-bold text-[#592644] mt-5">{modalInsumo.stock_minimo}</p>
+                                <div className="bg-gray-50 rounded-2xl p-6 shadow-lg">
+                                    <p className="font-bold text-sm mb-3 text-[#592644]">DISPONIBILIDAD MINIMA</p>
+                                    <p className="text-4xl font-bold text-[#592644]">{modalInsumo.stock_minimo}</p>
                                 </div>
-                                <div>
-                                    <p className="font-bold text-sm mb-1">DISPONIBILIDAD MAXIMA</p>
-                                    <p className="text-4xl font-bold text-[#592644] mt-5">{modalInsumo.stock_maximo}</p>
+                                <div className="bg-gray-50 rounded-2xl p-6 shadow-lg">
+                                    <p className="font-bold text-sm mb-3 text-[#592644]">DISPONIBILIDAD MAXIMA</p>
+                                    <p className="text-4xl font-bold text-[#592644]">{modalInsumo.stock_maximo}</p>
                                 </div>
                             </div>
 
                             <div className="flex justify-center">
                                 <button
                                     onClick={() => setModalInsumo(null)}
-                                    className="bg-[#592644] text-white py-3 px-8 rounded-lg shadow hover:bg-[#592655] transition duration-300 text-lg shadow-lg"
+                                    className="bg-[#592644] text-white py-4 px-10 rounded-xl shadow-lg hover:bg-[#592655] transition duration-300 text-lg font-semibold"
                                 >
                                     Cerrar
                                 </button>
@@ -429,29 +495,29 @@ const Reportes = () => {
                                         EN MANTENIMIENTO
                                     </div>
 
-                                    <div className="text-center mb-6 mt-4">
-                                        <h2 className="text-2xl font-bold text-black mb-2 text-[#592644]">
+                                    <div className="text-center mb-8 mt-4">
+                                        <h2 className="text-2xl font-bold text-black mb-4 text-[#592644]">
                                             {selectedMovimiento.insumo_nombre || 'Insumo no especificado'}
                                         </h2>
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-6 mb-8">
-                                        <div className="bg-gray-200 rounded-2xl p-4 text-center shadow-lg">
-                                            <p className="font-bold text-base mb-2 text-[#592644]">CANTIDAD</p>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                                        <div className="bg-gray-100 rounded-2xl p-6 text-center shadow-lg">
+                                            <p className="font-bold text-base mb-3 text-[#592644]">CANTIDAD</p>
                                             <p className="text-3xl font-bold text-blue-600">
                                                 {selectedMovimiento.cantidad}
                                             </p>
                                         </div>
-                                        <div className="bg-gray-200 rounded-2xl p-4 text-center shadow-lg">
-                                            <p className="font-bold text-base mb-2 text-[#592644]">TIPO</p>
+                                        <div className="bg-gray-100 rounded-2xl p-6 text-center shadow-lg">
+                                            <p className="font-bold text-base mb-3 text-[#592644]">TIPO</p>
                                             <p className="text-2xl font-bold text-[#592644]">
                                                 {insumos.find(i => i.id_insumo === selectedMovimiento.id_insumo)?.tipo || 'No especificado'}
                                             </p>
                                         </div>
                                     </div>
 
-                                    <div className="bg-gray-100 rounded-2xl p-4 mb-6">
-                                        <p className="font-bold text-base mb-2 text-[#592644]">UNIDAD DE MEDIDA</p>
+                                    <div className="bg-gray-100 rounded-2xl p-6 mb-8">
+                                        <p className="font-bold text-base mb-3 text-[#592644]">UNIDAD DE MEDIDA</p>
                                         <p className="text-lg text-gray-700">
                                             {insumos.find(i => i.id_insumo === selectedMovimiento.id_insumo)?.unidad_medida || 'No especificado'}
                                         </p>
@@ -462,47 +528,46 @@ const Reportes = () => {
                     </div>
                 )}
 
-                {/* Modal de Detalles */}
                 {selectedInsumo && (
-                    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
-                        <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4 shadow-lg">
-                            <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-xl font-bold text-[#592644]">
+                    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-2xl p-8 w-full max-w-lg mx-4 shadow-2xl">
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="text-2xl font-bold text-[#592644]">
                                     {selectedInsumo.cantidad_mantenimiento > 0 ? 'Detalles de Mantenimiento' : 'Detalles del Insumo'}
                                 </h3>
-                                <button onClick={() => setSelectedInsumo(null)} className="text-gray-500 hover:text-red-500">
+                                <button onClick={() => setSelectedInsumo(null)} className="text-gray-500 hover:text-red-500 p-2 rounded-lg hover:bg-gray-100 transition-colors">
                                     <XMarkIcon className="w-6 h-6" />
                                 </button>
                             </div>
                             
                             {selectedInsumo.cantidad_mantenimiento > 0 ? (
-                                <div className="space-y-4">
+                                <div className="space-y-6">
                                     <div>
-                                        <h4 className="font-semibold text-gray-700">Nombre</h4>
-                                        <p className="text-gray-600">{selectedInsumo.nombre}</p>
+                                        <h4 className="font-semibold text-gray-700 text-lg mb-2">Nombre</h4>
+                                        <p className="text-gray-600 text-lg">{selectedInsumo.nombre}</p>
                                     </div>
                                     <div>
-                                        <h4 className="font-semibold text-gray-700">Cantidad en Mantenimiento</h4>
-                                        <p className="text-blue-600 font-medium">{selectedInsumo.cantidad_mantenimiento}</p>
+                                        <h4 className="font-semibold text-gray-700 text-lg mb-2">Cantidad en Mantenimiento</h4>
+                                        <p className="text-blue-600 font-medium text-xl">{selectedInsumo.cantidad_mantenimiento}</p>
                                     </div>
                                 </div>
                             ) : (
-                                <div className="space-y-4">
+                                <div className="space-y-6">
                                     <div>
-                                        <h4 className="font-semibold text-gray-700">Nombre</h4>
-                                        <p className="text-gray-600">{selectedInsumo.nombre}</p>
+                                        <h4 className="font-semibold text-gray-700 text-lg mb-2">Nombre</h4>
+                                        <p className="text-gray-600 text-lg">{selectedInsumo.nombre}</p>
                                     </div>
                                     <div>
-                                        <h4 className="font-semibold text-gray-700">Stock Actual</h4>
-                                        <p className="text-gray-600">{selectedInsumo.stock_actual}</p>
+                                        <h4 className="font-semibold text-gray-700 text-lg mb-2">Stock Actual</h4>
+                                        <p className="text-gray-600 text-xl">{selectedInsumo.stock_actual}</p>
                                     </div>
                                     <div>
-                                        <h4 className="font-semibold text-gray-700">Stock Mínimo</h4>
-                                        <p className="text-gray-600">{selectedInsumo.stock_minimo}</p>
+                                        <h4 className="font-semibold text-gray-700 text-lg mb-2">Stock Mínimo</h4>
+                                        <p className="text-gray-600 text-xl">{selectedInsumo.stock_minimo}</p>
                                     </div>
                                     <div>
-                                        <h4 className="font-semibold text-gray-700">Ubicación</h4>
-                                        <p className="text-gray-600">{selectedInsumo.ubicacion}</p>
+                                        <h4 className="font-semibold text-gray-700 text-lg mb-2">Ubicación</h4>
+                                        <p className="text-gray-600 text-lg">{selectedInsumo.ubicacion}</p>
                                     </div>
                                 </div>
                             )}

@@ -26,7 +26,6 @@ export const NotificationProvider = ({ children }) => {
         setNotifications(prev => [newNotification, ...prev]);
         setUnreadCount(prev => prev + 1);
 
-        // Configurar el estilo de la notificación según el tipo
         const toastStyle = {
             background: '#592644',
             color: 'white',
@@ -39,7 +38,6 @@ export const NotificationProvider = ({ children }) => {
             gap: '12px'
         };
 
-        // Configurar el ícono según el tipo de notificación
         const getIcon = () => {
             switch (type) {
                 case 'solicitud_estudiante':
@@ -63,9 +61,7 @@ export const NotificationProvider = ({ children }) => {
             }
         };
 
-        // Función para manejar el clic en la notificación
         const handleClick = () => {
-            // Redirigir según el tipo de notificación
             if (type === 'solicitud_estudiante') {
                 navigate('/alumnos');
             } else if (type === 'solicitud_docente') {

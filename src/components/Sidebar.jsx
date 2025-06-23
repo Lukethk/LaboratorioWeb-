@@ -22,6 +22,7 @@ const Sidebar = () => {
         { path: "/reportes", label: "Reportes", icon: "fas fa-file-alt" },
         { path: "/alumnos", label: "Alumnos", icon: "fas fa-graduation-cap" },
         { path: "/movimientos", label: "Movimientos", icon: "fas fa-exchange-alt" },
+        { path: "/seguimiento", label: "Seguimiento", icon: "fas fa-tasks" },
     ];
 
     useEffect(() => {

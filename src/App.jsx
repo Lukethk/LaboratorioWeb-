@@ -13,6 +13,7 @@ import Dashboard from './pages/Dashboard';
 import Supplies from './pages/Supplies';
 import Reportes from './pages/Reportes';
 import Movimientos from './pages/MovimientosdeInventario';
+import Seguimiento from './pages/Seguimiento';
 import Navbar from './components/Navbar';
 
 const AppContent = () => {
@@ -33,6 +34,7 @@ const AppContent = () => {
                 <Route path="/supplies" element={<Supplies />} />
                 <Route path="/reportes" element={<Reportes />} />
                 <Route path="/movimientos" element={<Movimientos />} />
+                <Route path="/seguimiento" element={<Seguimiento />} />
                 <Route path="*" element={<Navigate to="/login" replace />} />
             </Routes>
             <ToastContainer
