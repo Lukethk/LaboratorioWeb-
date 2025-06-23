@@ -124,7 +124,7 @@ const Seguimiento = () => {
             <div className={`flex-1 p-4 md:p-6 bg-white shadow-xl rounded-xl mt-20 lg:mt-0 transition-all duration-300 ${isSidebarOpen ? 'lg:ml-60' : 'lg:ml-20'}`}>
                 <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
                     <div className="flex items-center gap-3 mb-4 sm:mb-0">
-                         <WrenchScrewdriverIcon className="w-8 h-8 text-[#592644]"/>
+                         
                         <h2 className="text-2xl font-bold text-black">Gestión de Insumos No Devueltos</h2>
                     </div>
                     <button onClick={fetchData} className="flex items-center gap-2 bg-[#592644] hover:bg-[#4b1f3d] text-white font-semibold py-2 px-4 rounded-lg shadow-lg transition-transform transform hover:scale-105 duration-300 ease-in-out">
